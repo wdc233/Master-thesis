@@ -6,7 +6,7 @@
 %%
 %% yanputhesis.dtx  (with options: `sample')
 %% Copyright (C) 2022 by Shangkun Shen
-%% 
+%%
 %% It may be distributed and/or modified under the conditions of the LaTeX
 %% Project Public License, either version 1.3b of this license or (at your
 %% option) any later version. The latest version of this license is in
@@ -36,86 +36,6 @@
 %%=============================================================================%
 %% 参考文献（也可以是独立文件）
 %%-----------------------------------------------------------------------------%
-\begin{filecontents}{reference.bib}
-@software{NWPUThesisLaTeXTemplate,
-  title     = {Yet Another {{\LaTeX}} Template for NPU Thesis},
-  author    = {Shangkun Shen and Zhihe Wang and Jiduo Zhang and Weijia Zhang},
-  month     = {11},
-  year      = {2019},
-  publisher = {Zenodo},
-  journal   = {GitHub repository},
-  doi       = {10.5281/zenodo.4159248},
-  url       = {https://doi.org/10.5281/zenodo.4159248}
-}
-
-@book{knuth1986the,
-  title     = {The {{\TeX}}book},
-  author    = {Knuth, Donald E},
-  publisher = {Addison-Wesley},
-  year      = {1986}
-}
-
-@book{lamport1989latex,
-  title     = {{{\LaTeX}}: a document preparation system},
-  author    = {Lamport, Leslie},
-  publisher = {Addison-Wesley Professional},
-  year      = {1989}
-}
-
-@article{szegedy2015going,
-  title   = {Going deeper with convolutions},
-  author  = {Szegedy, Christian and Liu, Wei and Jia, Yangqing and
-             Sermanet, Pierre and Reed, Scott E and Anguelov, Dragomir and
-             Erhan, Dumitru and Vanhoucke, Vincent and Rabinovich, Andrew},
-  journal = {Computer Vision and Pattern Recognition},
-  pages   = {1--9},
-  year    = {2015}
-}
-
-@software{MathSymbolsinLaTeXbypolossk,
-  title     = {Math Symbols in {{\LaTeX}}},
-  author    = {Shangkun Shen},
-  year      = {2017},
-  month     = {10},
-  publisher = {Zenodo},
-  journal   = {GitHub repository},
-  doi       = {10.5281/zenodo.4120375},
-  url       = {https://doi.org/10.5281/zenodo.4120375}
-}
-
-@article{chen2014maiyuan,
-  title   = {脉源三支 强强融合——西北工业大学},
-  author  = {{陈家忠}},
-  journal = {电子技术与软件工程},
-  number  = {9},
-  pages   = {15--16},
-  year    = {2014}
-}
-
-@article{shen2021peridynamic,
-  title     = {Peridynamic modeling with energy-based surface correction for
-               fracture simulation of random porous materials},
-  journal   = {Theoretical and Applied Fracture Mechanics},
-  volume    = {114},
-  pages     = {102987},
-  year      = {2021},
-  issn      = {0167-8442},
-  author    = {Shangkun Shen and Zihao Yang and Fei Han and Junzhi Cui and
-               Jieqiong Zhang},
-  publisher = {Elsevier}
-}
-
-@inproceedings{chen2018autonomous,
-  title        = {Autonomous vehicle testing and validation platform: Integrated
-                  simulation system with hardware in the loop},
-  author       = {Chen, Yu and Chen, Shitao and Zhang, Tangyike and
-                  Zhang, Songyi and Zheng, Nanning},
-  booktitle    = {2018 IEEE Intelligent Vehicles Symposium (IV)},
-  pages        = {949--956},
-  year         = {2018},
-  organization = {IEEE}
-}
-\end{filecontents}
 %%=============================================================================%
 %% 基本信息录入
 %%-----------------------------------------------------------------------------%
@@ -194,17 +114,28 @@
 
 目前，深度学习算法已经被广泛应用到各种计算机视觉任务，比如图像分类、目标检测、深度估计，以及语义分割、实例分割等与变化检测相似的密集预测任务，并且表现出了远超传统方法的优异性能。然而，基于卷积神经网络（Convolutional Neural Network, CNN）或者Transformer网络的全监督的深度学习变化检测算法都及其依赖于大量的人工标注，当有标注的训练样本减少时，模型的识别能力急剧下降。而且，变化检测任务的数据标注非常复杂，需要高精度几何图像配准和像素级精细标注，耗时耗力。这一点从目前可以获取到的公开数据集的数据规模对比就可以看出来，通常图像分类、目标检测的数据集能够达到数十万张，而变化检测的数据集规模仅在几百至几万张。为了应对这些挑战，研究人员研究了一系列方法，如自监督学习（Self-supervised learning, SSL）、无监督变化检测（Unsupervised Change Detection, USCD）、弱监督变化检测（Weakly Supervised Change Detection, WSCD）和样本生成策略（sample generation strategies）。虽然弱监督变化检测具有一定的成本效益，但它依赖于不完整或不准确的标签，这可能会引入错误信号和不可预测的噪声数据。另一方面，无监督变化检测完全不使用标注数据，而是利用数据中存在的固有联系作为监督指导，这导致它在处理分类或检测等特定任务时，由于缺乏正确的语义信息而面临挑战。样本生成策略，包括数据增强[23]、生成式对抗网络和扩散模型，经常需要模拟或合成额外的数据样本。然而，当处理有限的可用样本时，由于生成的数据多样性不足，这些方法可能会遇到约束，从而降低模型的泛化能力。半监督变化检测有效弥补了这些方法的不足，一方面它能够从有限的标注数据中学习到正确的语义信息，另一方面还能够从大量的易获得的无标注数据分布中学习到更为多样的变化特征表示，因此，半监督变化检测成为了一种更有前景的解决方案。
 
-在此研究背景之下，本文着力研究了半监督变化检测算法，针对模型为无标注样本生成的伪标签可能包含错误标签从而引入额外噪声这一问题，我们从提高无标注样本的伪标签的可靠性入手进行了一系列的研究，分别从无标注样本增强、模型参数更新、伪标签生成模型、伪标签生成策略等方面进行了改进，有效地提升了伪标签的质量，从而提高了半监督变化检测算法的性能。
+在此背景之下，本文着力研究了半监督变化检测算法，针对模型为无标注样本生成的伪标签可能包含错误标签从而引入额外噪声这一问题，我们从提高无标注样本的伪标签的可靠性入手进行了一系列的研究，分别从无标注样本增强、模型参数更新、伪标签生成模型、伪标签生成策略等方面进行了改进，有效地提升了伪标签的质量，从而提高了半监督变化检测算法的性能。
 
 \section{国内外研究现状及趋势}
 此前国内外学者已经在半监督变化检测算法领域进行了大量的研究，本小节将介绍与本文最相关的几个方向的研究现状，包括半监督学习，全监督遥感影像变化检测，以及半监督遥感影像变化检测的基本任务与方法和研究发展历程。
-\subsubsection{半监督学习算法}
+\subsection{半监督学习算法}
 在实际应用场景中，无标签的数据易于获取，而有标签的数据收集起来通常很困难，标注过程也是一项极度劳动密集的工作。在这种情况下，半监督学习（Semi-Supervised Learning, SSL）是一种克服样本标注困难问题的可行方法，近年来也已经成为深度学习领域一个热门的研究方向，其旨在仅利用一小部分标记数据进行监督训练，学习到正确的语音信息，同时利用大量的无标注训练样本进行无监督训练，以提高模型的泛化性，减少过拟合现象。SSL主要包含三种策略：一致正则化（Consistent Regularization, CR）、自训练（Self Training）、生成模型以及一些包括其中多种思想的整体方法。
 
-一致性正则化方法基于扰动一致性的概念，所谓的扰动一致性即：如果对一个未标记的数据应用实际的扰动，则预测不应发生显著变化，因为在聚类假设下，具有不同标签的数据点在低密度区域是互相分离的。这种方法首先对输入数据施加不同程度的扰动，将模型在这些输入数据上的输出之间的一致性作为训练约束。目前的三个主流的一致性正则化训练框架包括：Π-模型[35]，时间集成模型[35]和平均教师（Mean-Teacher, MT）模型[32]。这几种框架都是以双分支网络作为基础架构，其中Π-模型的双分支网络之间是共享参数权重的；时间集成模型合并时间序列中的所有输出，每个图像的伪标签是先前生成结果的EMA；MT模型在模型参数水平上进行平滑操作。该模型在随后的各个领域的半监督研究中得到了应用，例如Active-Teacher用于半监督对象检测[36]，[33]，[37]-[39]用于半监督一般语义分割，[40]用于图像分类，[41][42]用于半监督医学图像分割。在摄动设计领域也进行了探索，[43]和[25]分别检测了CR的图像级摄动和特征级摄动。
-\subsubsection{遥感影像变化检测}
-emmm
-\subsubsection{半监督遥感影像变化检测}
+一致性正则化方法基于扰动一致性的概念，所谓的扰动一致性即：如果对一个未标记的数据应用实际的扰动，则预测不应发生显著变化，因为在聚类假设下，具有不同标签的数据点在低密度区域是互相分离的。这种方法首先对输入数据施加不同程度的扰动，将模型在这些输入数据上的输出之间的一致性作为训练约束。目前的三个主流的一致性正则化训练框架包括：Π-模型[35]，时间集成模型[35]和平均教师（Mean-Teacher, MT）模型[32]。这几种框架都是以双分支网络作为基础架构，两个网络分支分别对扰动后的训练样本和原始训练样本进行前向推理，通过最小化两次推理的概率分布的均方误差（Mean Square Error, MSE）来优化模型参数。其中Π-模型的双分支网络之间是共享参数权重的，每次更新参数之后两个分支同步更新；时间集成模型合并时间序列上的所有输出结果，当前模型预测结果与历史预测结果的指数移动平均值（Exponential Moving Average, EMA）做均方误差计算，这有效地保留历史了信息，消除了扰动并稳定了当前值；MT模型从模型参数层面进行了平滑操作，学生模型的权重是历史模型参数的EMA集成，该模型在随后的各个领域的半监督研究中得到了应用，例如Active-Teacher用于半监督对象检测[36]，[33]，[37]-[39]用于半监督一般语义分割，[40]用于图像分类，[41][42]用于半监督医学图像分割。此外有研究人员也在扰动设计方面进行了探索，[43]和[25]分别在一致性正则化中应用了图像级扰动和特征级扰动。
+
+基于自训练的半监督学习算法思想是：首先使用一个预测模型或它的某些变体来为无标注样本生成一些伪标签，将这些伪标签和有标注的数据样本混合在一起进行监督训练，提供一些额外的训练信息。一个最为关键的问题就在于伪标签的可靠性，因为这直接影响了模型的训练效果，因此大量的研究从此处入手，研究了生成高质量伪标签的方法。[44]采用一个设定的概率阈值作为选择标准，预测概率小于此阈值的类别标签直接被丢弃。ST++[45]开发了一种多层自训练结构，每个阶段选择一批高质量的伪标签参与到训练，反复进行此挑选和训练过程，直到所有未标记的样本都得到了利用。[46]计算出伪标签中每个像素的信息熵，使用一个恒定的熵值作为过滤阈值，排除那些不可靠的伪标签。此外还有一种协同训练（Co-training）框架\cite{co-training}，这种框架包含两个模型，分别为彼此提供伪标签。
+
+基于生成模型的方法旨在利用生成模型对数据的分布进行建模，从而推断出未标注数据的潜在信息。半监督变分自编码器\cite{semiVAE}是变分自编码器（Variational Autoencoder, VAE）在半监督学习中的一种扩展方法，添加了一个分类器来学习语义信息，首先VAE从标注样本集中学习一个真实的数据分布，然后在大量的无标注样本上基于分类器分类结果去指导模型学习一个更为丰富的潜在分布。Ren等人[]利用生成对抗策略训练了一个能够生成共配准图像的生成器，从原始图像高维特征空间中采样，从特征空间分布的上界和下界之间按照策略选择一些特征向量生成高质量配准图像，从而后续只需用通过特征融合方法即可找出变化区域，并且扩充了学习到的特征空间。
+
+通常情况下，实际应用中更多采用的是整体方法（Holistic Methods），即在一个框架中整合前述的 SSL 的主要方法，从而获得更好的性能。比如[33]、[38]-[40]和[45]这些研究工作。其中最为经典的是FixMatch\cite{sohn2020fixmatch}，提出了一种基于伪标签和一致性正则化的简单而有效的整体方法。
+
+\subsection{基于深度学习的遥感影像变化检测}
+受深度学习在各领域取得的巨大成功所启发，近十年在变化检测领域也涌现出了许多经典的工作，推动了遥感影像变化检测研究的发展，下面本小节将按照大致的时间顺序分别介绍基于CNN的变化检测方法、基于Transformer的变化检测方法以及近期出现的基于大模型的变化检测方法。
+\subsubsection{基于CNN的变化检测方法}
+CNN引入了卷积和池化网络层，使其能够有效地捕获数据中的空间特征和局部关系，同时通过深度网络结构层层提取更抽象的高维特征，经典的CNN架构包括LeNet-5、AlexNet、VGG、ResNet等。研究人员利用双分支孪生网络分别对两幅时相图像进行处理，提取高维特征，然后进行特征融合，识别出双时相图像对之间的差异。最为经典的工作是Daudt 等人\cite{daudt2018FC-EF}在2018年使用全卷积网络构建了基于UNet的架构及其两个孪生变体，这三种变化检测框架分别是FC-EF、FC-Siam-conc、FC-Siam-diff，每种框架都采用了不同的特征融合策略，其中FC-EF是在输入层面首先对双时相图像进行了图像级别的融合，另外两种都是对从双时相图像对中抽取的高维特征进行融合。Shi等人\cite{shi2021DSAMNet}提出的DSAMNet在每个多尺度特征融合阶段添加了卷积块注意模块（Convolutional Block Attention Modules，CBAM），这种轻量级的注意力机制从空间和通道两个维度上对特征之间的关系进行了建模，动态地调整了特征图地权重。Zhang等人\cite{zhang2023MFNet}提出了一个互特征学习网络——MFNet（Mutual Feature-Aware Networks），提出的对称变化特征融合模块弥补了此前差分特征融合造成的信息丢失问题，同时通过在编码阶段提前引入差异感知，使得编码器更加聚焦于对潜在变化区域的特征学习。Fang等人将孪生网络和稠密连接的NestedUNet网络结合到了一起，浅层特征和深层特征之间紧凑的信息传输减少了特征抽取中的位置信息丢失。总的来说，基于CNN的监督变化检测方法大多侧重于特征融合模块的设计或者精巧的编码器设计，以更加精确地表示变化特征。
+\subsubsection{基于Transformer的变化检测方法}
+\subsubsection{基于大模型的变化检测方法}
+\subsection{半监督遥感影像变化检测}
 emmm
 \section{本文主要内容及结构安排}
 emmm
@@ -323,11 +254,11 @@ emmm
 %%=============================================================================%
 
 
-%% 
+%%
 %% This work consists of the file  yanputhesis.dtx
 %% and the derived files           yanputhesis.ins,
 %%                                 yanputhesis.pdf,
 %%                                 yanputhesis.cls.
-%% 
+%%
 %%
 %% End of file `yanputhesis-sample.tex'.
