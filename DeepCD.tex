@@ -35,6 +35,11 @@
 \usepackage{amsmath}                                        % 基础数学库
 \usepackage{colortbl}
 \usepackage[table]{xcolor}
+\usepackage{algorithm}
+\usepackage{algpseudocode}  % 使用这个包来支持伪代码环境
+\renewcommand{\algorithmicrequire}{ \textbf{Input:}} %Use Input in the format of Algorithm
+\renewcommand{\algorithmicensure}{ \textbf{Output:}} %UseOutput in the format of Algorithm
+\definecolor{mycyan}{cmyk}{.3,0,0,0}
 
 %%=============================================================================%
 %% 参考文献（也可以是独立文件）
@@ -169,9 +174,9 @@ Transformer 是一种基于自注意力机制的深度学习模型，最初由 V
 
 第二章首先介绍了本文研究工作中用到的一些骨干特征提取网络和预训练大模型，之后对本研究工作中进行对比的几种经典半监督变化检测算法进行了阐述，最后详细介绍了本研究中采用的实验指标和用到的数据集。
 
-第三章基于伪标签评估的自适应半监督变化检测工作介绍。首先介绍了模型的整体框架以及训练流程，随后详细介绍了设计的伪标签评估指标，以及基于此指标设计的两个自适应模块。最后在实验部分报告了该研究方法在十个公开数据集上取得的实验结果，并与其他经典半监督变化检测算法在定性和定量上进行了公平的对比，最后通过消融实验证明了每个模块的有效性。
+第三章基于自适应动态阈值的半监督变化检测工作介绍。首先介绍了模型整体框架和设计的三种变化掩码生成策略，之后介绍了实验设置以及展示了取得的实验指标结果和可视化结果，通过大量的对比实验结果验证了本工作的有效性。
 
-第四章基于大模型先验的半监督变化检测工作介绍。首先介绍了模型整体框架和设计的三种变化掩码生成策略，之后介绍了实验设置以及展示了取得的实验指标结果和可视化结果，通过大量的对比实验结果验证了本工作的有效性。
+第四章基于伪标签评估的自适应半监督变化检测工作介绍。首先介绍了模型的整体框架以及训练流程，随后详细介绍了设计的伪标签评估指标，以及基于此指标设计的两个自适应模块。最后在实验部分报告了该研究方法在十个公开数据集上取得的实验结果，并与其他经典半监督变化检测算法在定性和定量上进行了公平的对比，最后通过消融实验证明了每个模块的有效性。
 
 第五章基于特征对齐的半监督变化检测工作介绍。首先介绍了模型整体框架，以及我们对图像间的同类特征潜在相似性的探究，并随后介绍了以此为基础结合预训练大模型提出的多源特征对齐方法，最后通过大量的对比实验，验证了本章所提方法的优越性。
 
@@ -237,30 +242,48 @@ ViT的网络结构如图\ref{fig:ViT}所示，输入的图像首先被分割为�
 \end{equation}
 
 ViT摒弃了传统卷积操作，采用自注意力机制实现图像全局特征的高效建模，其模块化和可扩展的架构使其在大规模数据集和高效计算资源支持下展现出优异性能。然而，ViT在小规模数据场景中仍面临一定挑战，主要体现在模型对训练数据的需求较高和计算效率的限制。因此，针对训练数据稀缺的情况，结合半监督学习算法是一种具有潜力的研究方向，通过充分利用未标注数据，有望显著提升ViT在小数据集场景下的表现。
-\subsection{Segment Anything Model}
-自然语言处理领域中基于Transformer的大模型（如GPT和BERT等）展现了跨任务和跨领域的通用性，这进一步推动了视觉领域对通用大模型的需求。受此启发，Meta AI提出了Segment Anything Model\cite{kirillov2023SAM}（SAM），旨在实现对任意图像或视频中的对象进行高效、精准的分割，而无需对具体类别或场景进行额外的训练。其设计理念与通用大模型相似，即通过大规模数据集预训练，使模型具有广泛的泛化能力，能够零样本或少样本适应新任务。其核心思想是通过一个提示驱动（prompt-driven）框架，允许用户通过灵活的提示方式（如点、框、文本描述等）来指定感兴趣的区域，从而实现高度交互性和可控性。SAM的提出不仅是计算机视觉技术发展的延续，更标志着分割任务从任务特定模型向通用模型转变的关键一步，开启了视觉任务中的“分割一切”。
+\subsection{金字塔池化模型}
 \begin{figure}[htb]
   \centering
-  \includegraphics[scale=0.55]{images/SAM1.png}
+  \includegraphics[scale=0.35]{images/PPM.png}
   \caption{
-    分割一切基础模型架构\cite{kirillov2023SAM}。
+    金字塔池化模型架构\cite{zhao2017PPM}。
   }
-  \label{fig:SAMfram}
+  \label{fig:PPMfram}
 \end{figure}
+% \subsection{Segment Anything Model}
+% 自然语言处理领域中基于Transformer的大模型（如GPT和BERT等）展现了跨任务和跨领域的通用性，这进一步推动了视觉领域对通用大模型的需求。受此启发，Meta AI提出了Segment Anything Model\cite{kirillov2023SAM}（SAM），旨在实现对任意图像或视频中的对象进行高效、精准的分割，而无需对具体类别或场景进行额外的训练。其设计理念与通用大模型相似，即通过大规模数据集预训练，使模型具有广泛的泛化能力，能够零样本或少样本适应新任务。其核心思想是通过一个提示驱动（prompt-driven）框架，允许用户通过灵活的提示方式（如点、框、文本描述等）来指定感兴趣的区域，从而实现高度交互性和可控性。SAM的提出不仅是计算机视觉技术发展的延续，更标志着分割任务从任务特定模型向通用模型转变的关键一步，开启了视觉任务中的“分割一切”。
+% \begin{figure}[htb]
+%   \centering
+%   \includegraphics[scale=0.5]{images/SAM1.png}
+%   \caption{
+%     分割一切基础模型架构\cite{kirillov2023SAM}。
+%   }
+%   \label{fig:SAMfram}
+% \end{figure}
 
-为了实现这一目标，SAM引入了三个相互关联的组件来构建了分割的基础模型：一个基于提示的分割任务、一个通过数据标注提供动力并能够通过提示工程实现一系列任务零样本迁移的分割模型（SAM），以及一个用于收集数据集SA-1B的数据引擎，如图\ref{fig:SAMfram}。
-SAM的显著特性是支持多种类型的用户输入作为提示，包括：（1）单点提示，通过在目标对象上指定一个点，SAM能够快速分割该点所属的对象；（2）多点提示，当用户提供多个点时，模型能够根据点之间的关系生成更精确的分割；（3）框提示，通过提供一个边界框，模型可以分割框内的目标对象；（4）文本提示，与自然语言描述结合，通过文本指定需要分割的对象类别。这种灵活的提示驱动机制使SAM在复杂场景下能够通过用户少量交互即可实现高效分割。SAM的网络架构主要由三个主要部分组成，分别是图像编码器（Image Encoder），提示编码器（Prompt Encoder）以及掩码解码器（Mask Decoder）。其中图像编码器就是基于前文介绍的强大的ViT模型，用于提取高质量的全局图像特征，图像编码器在输入时对整幅图像进行一次性编码，生成具有全局上下文的多尺度特征嵌入。提示编码器用于编码用户提供的提示信息，包括点、框或文本等。点或框提示会被转换为位置嵌入，而文本提示则通过专门的文本编码器进行嵌入，提示编码器的设计使模型能够灵活适应多种提示形式。掩码解码器负责将图像编码器生成的全局特征与提示编码器的提示信息融合，生成与提示相关的分割掩码，如图\ref{fig:SAMfram}中所示的过程。此外SAM的强大性能得益于在一个规模空前的大型分割数据集上进行的预训练。该数据集包含超过11亿个图像-分割掩码对，覆盖了广泛的对象类别、场景和视觉条件。通过大规模预训练，SAM获得了卓越的通用性和泛化能力，能够分割未见过的对象或复杂场景中的目标，而无需进一步微调或额外标注。
-\begin{figure}[htb]
-  \centering
-  \includegraphics[scale=0.9]{images/SAM.png}
-  \caption{
-    Vision Transformer网络框架\cite{kirillov2023SAM}。
-  }
-  \label{fig:ViTfram}
-\end{figure}
+% 为了实现这一目标，SAM引入了三个相互关联的组件来构建了分割的基础模型：一个基于提示的分割任务、一个通过数据标注提供动力并能够通过提示工程实现一系列任务零样本迁移的分割模型（SAM），以及一个用于收集数据集SA-1B的数据引擎，如图\ref{fig:SAMfram}。
+% SAM的显著特性是支持多种类型的用户输入作为提示，包括：（1）单点提示，通过在目标对象上指定一个点，SAM能够快速分割该点所属的对象；（2）多点提示，当用户提供多个点时，模型能够根据点之间的关系生成更精确的分割；（3）框提示，通过提供一个边界框，模型可以分割框内的目标对象；（4）文本提示，与自然语言描述结合，通过文本指定需要分割的对象类别。这种灵活的提示驱动机制使SAM在复杂场景下能够通过用户少量交互即可实现高效分割。SAM的网络架构主要由三个主要部分组成，分别是图像编码器（Image Encoder），提示编码器（Prompt Encoder）以及掩码解码器（Mask Decoder）。其中图像编码器就是基于前文介绍的强大的ViT模型，用于提取高质量的全局图像特征，图像编码器在输入时对整幅图像进行一次性编码，生成具有全局上下文的多尺度特征嵌入。提示编码器用于编码用户提供的提示信息，包括点、框或文本等。点或框提示会被转换为位置嵌入，而文本提示则通过专门的文本编码器进行嵌入，提示编码器的设计使模型能够灵活适应多种提示形式。掩码解码器负责将图像编码器生成的全局特征与提示编码器的提示信息融合，生成与提示相关的分割掩码，如图\ref{fig:SAMfram}中所示的过程。此外SAM的强大性能得益于在一个规模空前的大型分割数据集上进行的预训练。该数据集包含超过11亿个图像-分割掩码对，覆盖了广泛的对象类别、场景和视觉条件。通过大规模预训练，SAM获得了卓越的通用性和泛化能力，能够分割未见过的对象或复杂场景中的目标，而无需进一步微调或额外标注。
+% \begin{figure}[htb]
+%   \centering
+%   \includegraphics[scale=0.9]{images/SAM.png}
+%   \caption{
+%     Vision Transformer网络框架\cite{kirillov2023SAM}。
+%   }
+%   \label{fig:ViTfram}
+% \end{figure}
 
-SAM是一项具有里程碑意义的技术，它通过灵活的提示驱动机制和大规模预训练，构建了一个适用于广泛视觉场景的分割模型。其强大的零样本推理能力和边界预测能力使得其可以不用微调直接用于其他场景和任务，并提供先验知识和辅助推理来优化性能，因此本文的研究工作中引入了SAM模型。
+% SAM是一项具有里程碑意义的技术，它通过灵活的提示驱动机制和大规模预训练，构建了一个适用于广泛视觉场景的分割模型。其强大的零样本推理能力和边界预测能力使得其可以不用微调直接用于其他场景和任务，并提供先验知识和辅助推理来优化性能，因此本文的研究工作中引入了SAM模型。
 \section{经典半监督变化检测算法}
+\subsection{SemiCDNet}
+\begin{figure}[htb]
+  \centering
+  \includegraphics[scale=0.45]{images/SemiCDNetframe.png}
+  \caption{
+    SemiCDNet网络框架\cite{peng2021SemiCDNet}。
+  }
+  \label{fig:SemiCDNetfram}
+\end{figure}
 \subsection{RCR}
 RCR（Revisiting Consistency Regularization）由Bandara等人\cite{bandara2022RCR}提出的，它们基于聚类假设构建了一个更加广阔的特征扰动空间，这种特征扰动一致性正则化使得模型具有更加强大的泛化能力。本文的研究工作的代码是基于RCR的变化检测网络和训练框架以及前文提到的平均教师模型改进实现的，因而有必要在本小节详细介绍RCR方法。
 
@@ -272,7 +295,7 @@ RCR（Revisiting Consistency Regularization）由Bandara等人\cite{bandara2022R
 3）解码器，从隐藏的差异特征表示预测变化掩膜。
 \begin{figure}[htb]
   \centering
-  \includegraphics[scale=0.5]{images/RCRframe.png}
+  \includegraphics[scale=0.45]{images/RCRframe.png}
   \caption{
     RCR网络框架\cite{bandara2022RCR}。
   }
@@ -569,35 +592,742 @@ FPA（Feature-Prediction Alignment）是张等人\cite{Zhang2023FPA}2023年提�
 
 \section{本章小结}
 本章主要介绍了本文研究内容的相关技术，首先简要介绍了卷积神经网络，主要包括本文中用到的ResNet模型。随后阐述了Vison Transformer模型的架构和原理。接着介绍了本文研究实验中使用的变化检测的 2 种最常用的评价指标。最后介绍了本文使用的十个公开数据集，所有实验均在这十个数据集上进行训练和验证。
+
+\chapter{基于自适应动态阈值的半监督变化检测算法}
+\section{引言}
+半监督变化检测方法中基于伪标记和一致性正则化的方法带来了令人印象深刻的性能而取得了巨大的成功，其关键思想在于模型应该根据半监督学习中的平滑假设和低密度假设，在不同的扰动下对相同的未标记数据产生类似的预测或相同的伪标签。然而这种方法可能无法更有效地利用未标记的数据，因为它们要么使用预定义/固定的阈值，要么使用特设的阈值调整方案，仅使用通过阈值筛选出的可信未标记样本来进行训练。而没有特定于不同数据分布进行相应的针对性调整，导致性能较差，收敛速度较慢。
+
+通常情况下，为保证伪标签的质量，需要设定一个高阈值。然而，固定的高阈值可能导致早期训练阶段的数据利用率低，并且忽略了不同类别的不同学习难度。Dash和admatch等半监督学习方法提出随着训练的进行，逐渐增加固定的全局（特定于数据集）阈值。虽然提高了对未标记数据的利用率，但这种特设阈值调整方案是由超参数进行控制，因此与模型的学习过程脱节。FlexMatch表明，不同的类应该有不同的局部（特定于类的）阈值。虽然局部阈值考虑了不同类别的学习差异，但它们仍然是从预定义的固定全局阈值映射出来的。Adsh通过优化每个类的伪标签数量，从预定义的非平衡半监督学习阈值中获得自适应阈值。总而言之，这些方法在根据模型的学习进度调整阈值方面均存在一些不足之处，从而阻碍了训练过程，特别是当标记数据过于稀缺而无法提供足够的监督时。
+
+此外，此前的基于伪标签的半监督变化检测方法中，对于那些被筛选掉的低置信度预测都是直接丢弃，而这样可能造成的问题就是，训练后的模型可能会过度拟合到容易学习的样本上，而忽略了难学习的样本，从而产生“马太效应”，即本来就强的变得更强，本来就弱的变得更弱。
+
+因此，我们认为需要根据模型的学习状态来自适应地确定阈值。具体来说，使用一个较低的全局阈值来利用更多的未标记数据，并在模型早期训练阶段加快收敛速度。随着训练过程的进行，预测置信度不断增加，此时使用更高的全局阈值来过滤掉错误的伪标签来减轻确认偏差。此外，由于变化检测中前景和背景类别的极度不平衡，还应该根据模型对变化和不变类预测的置信度，分别为前景、背景定义一个局部阈值，以减轻类别不平衡带来的预测偏向。并且我们增加了一个低置信度学习模块，旨在最大限度地利用整个未标记数据集，以提高训练过程中的泛化程度。具体来说，我们将来自低置信度预测的“软”伪标签中可能存在的正确信息通过一致性约束利用起来，以提高模型的性能和表征能力，最终提出了AdaThresh半监督变化检测框架。
+
+本章介绍了基于自适应动态阈值的半监督变化检测算法，首先整体性的阐述了算法的框架和训练流程，随后详细介绍了基于预测概率分布的全局动态阈值和类别动态阈值，以及设计的低置信度学习模块。最后在实验部分报告了本章方法在十个公开数据集上取得的实验结果，从定性和定量两个角度进行了全方位的对比，以及全面的消融实验分析，验证了AdaThresh的有效性。
+\section{基于自适应动态阈值的半监督变化检测框架}
+\subsection{整体框架}
+如图\ref{fig:AdaTh_frame}展示了AdaThresh的整体框架，AdaThresh采用了经典的教师学生模型（Mean-Teacher）作为主架构。其中学生模型为最终的训练目标模型，教师模型作为辅助模型，用于未标记数据的伪标签生成。
+
+\textbf{问题定义}：
+给定一个标记数据集$D_{l}=\left\{\left\{x_{a, i}^{l}, x_{b, i}^{l}\right\}, y_{i}^{l}\right\}_{i=1}^{m}$,一个无标注数据集$D_{u}=\left\{x_{a, j}^{u}, x_{b, j}^{u}\right\}_{j=1}^{n}$，其中$\left\{\left\{x_{a, i}^{l}, x_{b, i}^{l}\right\}, y_{i}^{l}\right\}$代表第i个双时相图像对和真实标签，以及$\left\{x_{a, j}^{u}, x_{b, j}^{u}\right\}$代表第i对未标记图像对，下标a和b分别是用于标识双时相图像对的前、后时相的图像，标注数据集和无标注数据集的样本数量分别是n和m, 并且$n \gg m$，模型M不仅在$D_{l}$上进行监督学习，还在$D_{l}$上进行无监督学习。
+
+监督学习过程即通过最小化学生模型预测概率与真实样本标签之间的交叉熵损失来优化模型的参数；无监督学习过程通常情况下将教师模型的输出作为训练指导，对于教师模型在无标记样本上的输出概率，通过一个阈值来筛选出可信的预测作为伪标签，然后最小化学生模型输出概率和伪标签之间的交叉熵损失来优化学生模型的参数。教师模型的参数更新则由学生模型参数的移动指数平均累计得到。此外通常情况下，在此框架中还引入了一致性正则化，即对无标记样本分别进行弱增强以及在此之上的进一步的强增强，分别作为教师模型和学生模型的输入，基于低密度假设和平滑假设，二者的输出结果应该保持一致。通过一致性正则化，能够进一步提高模型的泛化能力。
+
+很明显，生成伪标签过程中的阈值筛选是一个非常重要的过程，阈值过高会导致对无标记数据的利用率不足，而阈值过低又会导致引入错误标签。并且对于不同数据分布，最佳阈值的选择往往不相同，需要通过实验来验证。因此，我们设计了一种自适应的动态阈值调整机制，根据模型在不同数据上的预测概率分布，动态更新模型对于前景和背景的概率筛选阈值。此外，还设计了一个额外的低置信度学习模块，进一步提高对无标记数据的利用率。我们将在下面的小节中分别对这些设计进行详细阐述。
+\begin{figure}[htb]
+	\centering
+	\includegraphics[scale=0.35]{images/AdaThFrame.png}
+	\caption{
+		AdaThresh算法的整体框架。
+	}
+	\label{fig:AdaTh_frame}
+\end{figure}
+\subsection{全局自适应阈值}
+在我们的自适应阈值机制中，首先估计一个全局阈值作为模型置信度的均线。当训练开始时，阈值较低，此时接受更多可能正确的样本进入训练以加快模型的收敛速度。随着模型预测变得更加自信，全局阈值自适应地增加，以过滤掉可能不正确的样本，减少确认偏差。
+\begin{figure}[htb]
+	\centering
+	\includegraphics[scale=0.35]{images/adath_plot.png}
+	\caption{
+		训练过程中的全局自适应阈值。
+	}
+	\label{fig:AdaTh_frame}
+\end{figure}
+具体说来，我们基于以下两个原则设计全局阈值。首先，全局阈值应该与模型对未标记数据预测的概率分布相关，要尽可能地反映模型的整体学习状况。此外，全局阈值应该在训练过程中稳定地增加，以确保丢弃错误的伪标签。考虑到以上两点，我们将全局阈值$\tau_t$设置为模型对未标记数据的平均置信度，其中$t$表示第$t$个迭代轮次。为了使得阈值保持平滑，我们将全局置信度估计为每个训练时间步的置信度的指数移动平均（EMA），并且在训练初始时间将全局阈值设置为每种类别的平均预测概率，即0.5。综上，全局动态阈值的计算公式如\ref{eq:Adath_global}所示：
+\begin{equation}
+    \label{eq:Adath_global}
+    \tau_{t}=\left\{\begin{array}{ll}
+      0.5, & \text { if } t=0 \\
+      \lambda \tau_{t-1}+(1-\lambda) \frac{1}{\mu B} \sum_{b=1}^{\mu B} \max \left(p_{w, j}^{u}\right), & \text { otherwise }
+      \end{array}\right.
+\end{equation}
+
+其中，$p_{w, j}^{u}$为教师模型在弱增强输入图像上的预测概率输出，$\lambda$为EMA的衰减动量，通常为一个接近1.0的超参数。
+\subsection{类别自适应阈值}
+类别动态阈值旨在以特定于前景变化类别和背景不变类的方式调节各自的阈值，以考虑类内多样性和两种类别的差异性。我们分别计算模型对两种类别的预测概率分布的期望，以此来估计模型特定于类别的学习状态，具体地说，就是基于模型特定于类别的平均置信度，动态调整全局置信度在每个类别上的表示。同样地，我们也是将类别平均置信度估计为在每个训练时间步的置信度的指数移动平均（EMA），并且在训练初始时间将类别置信度设置为一个均匀分布，即（0.5，0.5）。计算公式如下:
+\begin{equation}
+    \label{eq:Adath_pmodel}
+    \tilde{p}_{t}(c)=\left\{\begin{array}{ll}
+      0.5, & \text { if } t=0 \\
+      \lambda \tilde{p}_{t-1}(c)+(1-\lambda) \frac{1}{\mu B} \sum_{b=1}^{\mu B} p_{w, j}^{u}(c), & \text { otherwise }
+      \end{array}\right.
+\end{equation}
+
+其中$\tilde{p}_{t} = [\tilde{p}_{t}[0], \tilde{p}_{t}[1]]$是包含前景和背景类别的预测概率分布的期望。然后对其进行一个最大归一化，将归一化后的值作为类别阈值权重，最终特定于类别的自适应动态阈值结合了全局动态阈值和类别置信度期望，公式表示为：
+\begin{equation}
+  \label{eq:Adath_weight}
+  \mathcal{W}(c)=\frac{\tilde{p}_{t}(c)}{\max \left\{\tilde{p}_{t}(c): c \in[0, 1]\right\}}
+\end{equation}
+\begin{equation}
+  \label{eq:Adath_localTh}
+  \tau_{t}(c)=\mathcal{W}(c) \times \tau_{t}
+\end{equation}
+
+则基于伪标签学习的训练损失为：
+\begin{equation}
+  \label{eq:Adath_argmax}
+  \hat{y}_{i}^{u}=\max \left(p_{s, j}^{u}\right)>\tau_{t}\left(\arg \max \left(p_{w, j}^{u}\right)\right.
+\end{equation}
+\begin{equation}
+  \label{eq:Adath_lossU}
+  \mathcal{L}_{u}=\frac{1}{\left|\mathcal{B}_{u}\right|} \sum_{j=1}^{\left|\mathcal{B}_{u}\right|} \operatorname{CE}\left(p_{s, j}^{u}, \hat{y}_{i}^{u}\right)
+\end{equation}
+
+其中，$p_{s, j}^{u}$为学生模型在强增强输入图像上的预测概率输出。
+\subsection{低置信度学习}
+在上一步的筛选过程中，剔除掉了许多低置信度的标签，仅使用高置信度的预测作为硬伪标签。这一做法基于这样一种假设：高置信度的标签都是正确的，而低置信度的标签都是错误的。但是我们在研究中发现，被筛选掉的一部分低置信度标签中也包含着正确的标签信息，但是在模型学习过程中没有得到充分的利用。因此我们将这部分低置信的标签并不完全丢弃，而是将其作为软伪标签，利用强弱增强图像对之间的输出一致性正则化对其进行学习。具体地，我们使用KL散度作为低置信度学习的损失函数，计算公式如下：
+\begin{equation}
+  \label{eq:Adath_lossSoft}
+  \mathcal{L}_{\mathrm{KL}}=\frac{1}{\mu B} \sum_{b=1}^{\mu B} \left(\max \left(p_{w, j}^{u}\right)<\tau_{t}\left(\arg \max \left(p_{w, j}^{u}\right)\right)\right) D_{\mathrm{KL}}\left(p_{s, j}^{u}, p_{w, j}^{u}\right)
+\end{equation}
+
+综上，我们的AdaThresh的总体损失表示为：
+\begin{equation}
+  \label{eq:Adath_lossSoft}
+  \mathcal{L}_{total}=\mathcal{L}_{s}+\lambda_{u} \mathcal{L}_{u}+\lambda_{k} \mathcal{L}_{KL}
+\end{equation}
+
+$\lambda_{u}$和$\lambda_{k}$分别是硬标签交叉熵损失和软标签KL散度损失的权重超参数，我们会在消融实验部分对其取值选择进行探究。
+
+\section{实验结果及分析}
+\textbf{数据划分}：我们对所有数据集遵循相同的标记比例划分设置，我们选择5$\%$，10$\%$，20$\%$和40$\%$作为标记样本的比例，此比例表示我们将整个训练集的这部分样本视作有标记训练样本，其余样本我们仅使用训练图像对而不使用相应的真实标签，即视作无标记样本。其中在LEVIR-CD和WHU-CD上我们遵循\cite{bandara2022RCR}\cite{Zhang2023FPA}中的半监督划分，并对其他数据集执行我们自己的随机划分，但我们对于所有对比实验都是使用此相同的训练样本集进行公平的实验对比。
+
+\textbf{实现细节}：为了防止网络结构带来的性能差异影响我们的结论，我们所有对比方法均使用ResNet50+PPM（Pyramid pooling module，特征金字塔池化模型）作为我们的变化检测网络。我们将初始学习率设置为0.01，它以0.9的动量随训练进程逐渐线性降低到1e-4，并使用SGD优化器训练所有方法。所有的模型都进行了80个epoch的训练，每个批次的标记和未标记mini-batch大小均设置为8。此外，所采用的所有数据增强方式都与\cite{Zhang2023FPA}中使用的增强方式相同，其中弱增强包括随机翻转、随机缩放、随机裁剪，强增强包括\cite{cubuk2020randaugment}中引用的9种强增强方式。由于标记数据的数量有限，模型对伪标签的过滤阈值非常敏感，在之前的研究中\cite{Zhang2023FPA}已经对阈值大小进行了消融研究，因此我们在对10个数据集进行的实验中将所有模型的阈值$\tau$按照经验都设置为0.95，并根据\cite{bandara2022RCR}$\phi$设置为5。我们所有的实验均利用PyTorch框架实现并且在4块NVIDIA GeForce RTX 3090 gpu上进行模型训练。
+\subsection{对比试验}
+\begin{table}[!htbp]
+  \centering
+  % \tiny
+  \scriptsize
+  \caption{不同CD方法在二值建筑物变化检测数据集上的平均定量性能对比。}
+  \resizebox{0.8\textwidth}{!}{
+  \begin{tabular}{p{20mm}p{20mm}p{8mm}p{8mm}cp{8mm}p{8mm}cp{8mm}p{8mm}cp{8mm}p{8mm}} %
+      \toprule
+      \multirow{2}{*}{Dataset} & \multirow{2}{*}{\parbox[c]{.2\linewidth}{Method}} & \multicolumn{2}{c}{5\%} & & \multicolumn{2}{c}{10\%} & & \multicolumn{2}{c}{20\%} & & \multicolumn{2}{c}{40\%}\\
+      \cmidrule{3-4} \cmidrule{6-7} \cmidrule{9-10} \cmidrule{12-13}
+      & & {$IoU^c$} & {OA} && {$IoU^c$} & {OA} & & {$IoU^c$} & {OA} &&{$IoU^c$} & {OA}\\
+      \midrule
+      \multirow{8}{*}{LEVIR-CD}
+      & Sup. only   &   61.0 & 97.60 && 66.8 & 98.13 && 72.3 & 98.44 && 74.9 & 98.60 \\ %40
+      & AdvEnt\cite{vu2019advent}& 66.1 & 98.08 && 72.3 & 98.45 && 74.6 & 98.58 && 75.0 & 98.60 \\ %40
+      & s4GAN\cite{mittal2019semi}& 64.0 & 97.89 && 67.0 & 98.11 && 73.4 & 98.51 && 75.4 & 98.62 \\
+      & SemiCDNet\cite{peng2021SemiCDNet} & 67.6 & 98.17 && 71.5 & 98.42 && 74.3 & 98.58 && 75.5 & 98.63 \\ %40
+      & RCR\cite{bandara2022RCR}& 72.5 & 98.47 && 75.5 & 98.63 && 76.2 & 98.68 && 77.2 & 98.72 \\
+      & FPA\cite{Zhang2023FPA}& \underline{73.7} & \underline{98.57} && \underline{76.6} & \underline{98.72} && \underline{77.4} & \underline{98.75} && \underline{77.0} & \underline{98.74} \\
+      \rowcolor{mycyan}
+      \multirow{-8}{*}{\cellcolor{white}}& \cellcolor{white}AdaSemiCD   &   \textbf{77.7} & \textbf{98.78} && \textbf{79.4} & \textbf{98.87} && \textbf{80.3} & \textbf{98.92} && \textbf{80.6} & \textbf{98.93} \\%40
+      \cline{2-13}
+      & Oracle & \multicolumn{11}{c}{$ IoU^c$=\textcolor{red}{\bf 77.9} and OA=\textcolor{red}{\bf 98.77}} \\
+      \bottomrule
+      %\midrule
+      \multirow{8}{*}{LEVIR-CD+}
+      & Sup. only   &   52.0 & 97.72 && 58.4 & 98.06 && 66.1 & 98.31 && 66.2 & 98.42 \\ %40
+      & AdvEnt\cite{vu2019advent}& 52.2 & 97.68 && 59.9 & 98.11 && 65.9 & 98.37 && 68.0 & 98.51 \\ %40
+      & s4GAN\cite{mittal2019semi}& 46.5 & 97.25 && 51.4 & 97.66 && 62.8 & 98.18 && 67.2 & 98.46 \\
+      & SemiCDNet\cite{peng2021SemiCDNet} & 52.6 & 97.66 && 60.7 & 98.24 && 64.8 & 98.37 && 66.1 & 98.38 \\ %40
+      & RCR\cite{bandara2022RCR}& \underline{64.9} & 98.25 && \underline{67.5} & \underline{98.45} && 68.5 & 98.52 && 68.4 & 98.51 \\
+      & FPA\cite{Zhang2023FPA}& 64.6 & \underline{98.30} && 67.3 & 98.40 && \underline{70.3} & \cellcolor{mycyan}\textbf{98.64} && \underline{69.0} & \underline{98.59} \\
+      \rowcolor{mycyan}
+      \multirow{-8}{*}{\cellcolor{white}}& \cellcolor{white}AdaSemiCD   &   \textbf{66.7} & \textbf{98.49} && \textbf{68.8} & \textbf{98.51} && \textbf{70.6} & \cellcolor{white}\underline{98.63} && \textbf{70.9} & \textbf{98.64} \\%40
+      \cline{2-13}
+      & Oracle & \multicolumn{11}{c}{$ IoU^c$=\textcolor{red}{\bf 70.5} and OA=\textcolor{red}{\bf 98.63}} \\
+      \bottomrule
+      % \midrule
+      \multirow{8}{*}{WHU-CD}
+      & Sup. only   &   50.0 & 97.48 && 55.7 & 97.53 && 65.4 & 98.20 && 76.1 & 98.94 \\ %40
+      & AdvEnt\cite{vu2019advent}& 55.1 & 97.90 && 61.6 & 98.11 && 73.8 & 98.80 && 76.6 & 98.94 \\ %40
+      & s4GAN\cite{mittal2019semi}& 18.3 & 96.69 && 62.6 & 98.15 && 70.8 & 98.60 && 76.4 & 98.96 \\
+      & SemiCDNet\cite{peng2021SemiCDNet} & 51.7 & 97.71 && 62.0 & 98.16 && 66.7 & 98.28 && 75.9 & 98.93 \\ %40
+      & RCR\cite{bandara2022RCR}& 65.8 & 98.37 && \underline{68.1} & \underline{98.47} && \cellcolor{mycyan}\textbf{74.8} & \underline{98.84} && \underline{77.2} & \underline{98.96} \\
+      & FPA\cite{Zhang2023FPA}& \underline{66.3} & \underline{98.45} && 57.4 & 97.69 && 62.5 & 98.48 && 73.1 & 98.69 \\
+      \rowcolor{mycyan}
+      \multirow{-8}{*}{\cellcolor{white}}& \cellcolor{white}AdaSemiCD   &   \textbf{67.8} & \textbf{98.62} && \textbf{70.8} & \textbf{98.70} && \cellcolor{white}\underline{74.7} & \textbf{98.86} && \textbf{79.6} & \textbf{99.13} \\%40
+      \cline{2-13}
+      & Oracle & \multicolumn{11}{c}{$ IoU^c$=\textcolor{red}{\bf 85.5} and OA=\textcolor{red}{\bf 99.38}} \\
+      \bottomrule
+      % \midrule
+      \multirow{8}{*}{GZ-CD}
+      & Sup. only   &   47.5 & 93.56 && 51.4 & 94.26 && 58.0 & 95.65 && 66.3 & 96.62 \\ %40
+      & AdvEnt\cite{vu2019advent}& 48.6 & 94.39 && 50.9 & 94.89 && 60.2 & 95.79 && 66.2 & 96.58 \\ %40
+      & s4GAN\cite{mittal2019semi}& 50.8 & 94.38 && 52.4 & 94.98 && 60.8 & 95.94 && 64.2 & 96.39 \\
+      & SemiCDNet\cite{peng2021SemiCDNet} & 48.4 & 93.58 && 49.7 & 94.79 && 59.0 & 95.66 && 66.3 & 96.57 \\ %40
+      & RCR\cite{bandara2022RCR}& 50.8 & 93.82 && 50.8 & 94.69 && 62.5 & 96.07 && 67.8 & 96.61 \\
+      \rowcolor{mycyan}
+      \multirow{-7}{*}{\cellcolor{white}}& \cellcolor{white}
+      FPA\cite{Zhang2023FPA}& \cellcolor{white}51.2 & \cellcolor{white}93.92 && \textbf{58.9} & \textbf{95.78} && \textbf{63.1} & \textbf{96.26} && \textbf{68.2} & \textbf{96.82} \\
+      \multirow{-8}{*}{\cellcolor{white}}& \cellcolor{white}AdaSemiCD   &   \cellcolor{mycyan}\textbf{51.6} & \cellcolor{mycyan}\textbf{94.56} && \underline{57.1} & \underline{95.57} && \underline{62.4} & \underline{96.21} && \underline{68.0} & \underline{96.75} \\%40
+      \cline{2-13}
+      & Oracle & \multicolumn{11}{c}{$ IoU^c$=\textcolor{red}{\bf 69.0} and OA=\textcolor{red}{\bf 96.93}} \\
+      \bottomrule
+      \multirow{8}{*}{EGY-CD}
+      & Sup. only   &   49.8 & 95.73 && 54.6 & 96.38 && 61.4 & 96.83 && 65.1 & 97.25 \\ %40
+      & AdvEnt\cite{vu2019advent}& 52.7 & 96.01 && 57.8 & 96.58 && 62.6 & 96.86 && 64.0 & 97.19 \\ %40
+      & s4GAN\cite{mittal2019semi}& 52.9 & 95.94 && 58.6 & 96.50 && 64.7 & 97.09 && 64.9 & 97.27 \\
+      & SemiCDNet\cite{peng2021SemiCDNet} & 52.4 & 96.00 && 57.9 & 96.31 && 62.8 & 96.95 && 63.8 & 97.19 \\ %40
+      & RCR\cite{bandara2022RCR}& \underline{58.1} & 96.50 && \underline{61.9} & 96.77 && 63.9 & 97.08 && 64.2 & 97.18 \\
+
+      \multirow{-7}{*}{\cellcolor{white}}& \cellcolor{white}
+      FPA\cite{Zhang2023FPA}& 57.5 & \underline{96.52} && 60.1 & \cellcolor{mycyan}\textbf{96.86} &\cellcolor{mycyan}& \cellcolor{mycyan}\textbf{65.2} & \cellcolor{mycyan}\textbf{97.25} && \underline{65.7} & \underline{97.34} \\
+
+      \rowcolor{mycyan}
+      \multirow{-8}{*}{\cellcolor{white}}& \cellcolor{white}AdaSemiCD   &   \textbf{59.0} & \textbf{96.55} && \textbf{60.5} & \cellcolor{white}\underline{96.80} & \cellcolor{white} & \cellcolor{white}\underline{65.0} & \cellcolor{white}\underline{97.20} & \cellcolor{white}& \textbf{67.4} & \textbf{97.39} \\%40
+      \cline{2-13}
+      & Oracle & \multicolumn{11}{c}{$ IoU^c$=\textcolor{red}{\bf 67.6} and OA=\textcolor{red}{\bf 97.54}} \\
+      \bottomrule
+      \multirow{8}{*}{HRCUS-CD}
+      & Sup. only   &   29.5 & 98.11 && 36.0 & 98.45 && 43.4 & 98.68 && 48.9 & 98.84 \\ %40
+      & AdvEnt\cite{vu2019advent}& 29.1 & 98.11 && 36.9 & 98.40 && 42.5 & 98.61 && 48.8 & 98.71 \\ %40
+      & s4GAN\cite{mittal2019semi}& 25.0 & 97.86 && 28.2 & 98.24 && 40.1 & 98.62 && 50.3 & 98.85 \\
+      & SemiCDNet\cite{peng2021SemiCDNet} & 28.4 & 98.00 && 34.7 & 98.44 && 44.1 & 98.68 && 48.5 & 98.74 \\ %40
+      & RCR\cite{bandara2022RCR}& \underline{36.1} & 98.36 && 42.1 & \underline{98.69} && 45.3 & 98.76 && 49.6 & 98.66 \\
+
+      & FPA\cite{Zhang2023FPA}& 35.2 & \underline{98.37} && \cellcolor{mycyan}\textbf{43.7} & 98.65 && \underline{46.7} & \underline{98.82} && \cellcolor{mycyan}\textbf{51.2} & \textbf{98.81} \\
+
+      \rowcolor{mycyan}
+      \multirow{-8}{*}{\cellcolor{white}}& \cellcolor{white}AdaSemiCD   &  \textbf{37.8} & \cellcolor{mycyan}\textbf{98.59} && \cellcolor{white}\underline{42.6} & \textbf{98.70} && \textbf{48.1} & \textbf{98.84} && \cellcolor{white}\underline{50.8} & \underline{98.87} \\%40
+      \cline{2-13}
+      & Oracle & \multicolumn{11}{c}{$ IoU^c$=\textcolor{red}{\bf 59.0} and OA=\textcolor{red}{\bf 99.06}} \\
+      \bottomrule
+  \end{tabular}
+  }
+  \label{tab:AdaTh-building}
+\end{table}
+\subsection{消融实验}
+\section{本章小结}
+
 \chapter{基于伪标签评估的自适应半监督变化检测算法}
 \section{引言}
+变化检测是遥感的一个重要领域，其主要重点是确定卫星在同一区域以不同间隔拍摄的双时相图像对中的变化区域。考虑到为变化检测任务准确标注掩码的过程是劳动密集型的，半监督变化检测是更有前景的方法。半监督变化检测的范式通常是通过利用有限的可用标签和大量未标记的样本来提高变化检测性能。对未标记的数据生成伪标签，这些伪标签通常是具有较高预测概率的临时预测掩码，将其作为训练过程中的指导信号，通过混合训练具有实际标签的有限数据和具有伪标签的丰富数据，学生模型可以学习到更多重要的特征，从而显著提高性能。最流行的方法是平均教师\cite{Tarvainen2017teacher}框架，它使用一个教师模型来生成伪标签，在训练过程中为学生模型提供指导。随后使用学生模型的指数移动平均（EMA）更新教师模型。
+
+虽然这些方法已经获得了一定的成功，但仍然存在重大问题：即模型以同样的方式处理所有样本，而不考虑不同样本之间必然存在的差异性，并且训练过程缺乏灵活性。首先，很明显，未标记的样本可能并不总是能够胜任“教师”角色。模型在为复杂的样本生成可靠的高质量伪标签时经常遇到困难，这反过来又引入了额外的噪声，可能会误导模型的训练。
+
+此外，EMA更新过程也没有考虑这种噪声干扰。考虑到训练批次中可能存在偏差或包含噪声，动态确定训练更新有助于训练过程的稳定性。这些因素强调需要更精确的监督方法，否则可能会对模型的训练产生负面影响。在本研究中，我们引入了一种自适应动态学习策略AdaSemiCD，旨在提高伪标签的准确性并简化训练过程。我们的框架结合了传统的半监督训练方法，并辅以两个创新的功能模块AdaFusion和AdaEMA。首先，我们利用AdaFusion在单个样本水平上抑制噪声，从而提高伪标签的准确性。与之前依赖于完全随机融合区域的Augseg\cite{zhao2023AugSeg}或CutMix\cite{yun2019cutmix}等方法相反，我们的AdaFusion模块主动识别可能最不确定的区域，并将其替换为来自高质量标记数据集或未标记数据集的可靠内容。在此之后，我们通过AdaEMA模块动态调整师生模型的参数更新选择批次，以确保提高稳定性。虽然传统的EMA有效地减轻了模型参数的波动从而提高了稳定性，但它在每次训练迭代后都统一的更新参数，在处理一系列训练样本时忽略了模型在不同迭代中的不同学习效果。如果未标记的样本包含大量错误信息，它可能会误导模型的训练。因此，我们的AdaEMA引入了模型级参数更新的自适应选择过程，使模型能够充分集成优越的参数。
+
+本章阐述了基于伪标签评估的自适应半监督变化检测算法，首先介绍了模型的整体框架以及训练流程，随后详细介绍了设计的伪标签评估指标，以及基于此指标设计的两个自适应模块。最后在实验部分报告了该研究方法在十个公开数据集上取得的实验结果，并与其他经典半监督变化检测算法在定性和定量两个维度进行了公平的对比，证明了我们的方法优越性。最后通过消融实验证明了每个模块的有效性。
 \section{基于伪标签评估的自适应半监督变化检测框架}
 \subsection{整体框架}
+图\ref{fig:Adasemicd_fram}展示了AdaSemiCD总体框架。半监督变更检测的任务描述如下：给定一个标记数据集$D_{l}=\left\{\left\{x_{a, i}^{l}, x_{b, i}^{l}\right\}, y_{i}^{l}\right\}_{i=1}^{m}$,一个无标注数据集$D_{u}=\left\{x_{a, j}^{u}, x_{b, j}^{u}\right\}_{j=1}^{n}$，其中$\left\{\left\{x_{a, i}^{l}, x_{b, i}^{l}\right\}, y_{i}^{l}\right\}$代表第i个双时相图像对和真实标签，以及$\left\{x_{a, j}^{u}, x_{b, j}^{u}\right\}$代表第i对未标记图像对，下标a和b分别是用于标识双时相图像对的前、后时相的图像，标注数据集和无标注数据集的样本数量分别是n和m, 并且$n \gg m$，模型M不仅可以从$D_{l}$中提取有意义的信息，还可以通过利用$D_{u}$中大量未标记的训练样本来捕获更广泛的特征，以提高模型的泛化能力。
+
+\begin{figure}[htb]
+  \centering
+  \includegraphics[scale=0.35]{images/AdaFrame.png}
+  \caption{
+    AdasemiCD的整体框架图。
+  }
+  \label{fig:Adasemicd_fram}
+\end{figure}
+
+\textbf{模型架构}：在本研究中，我们采用广泛应用的师生框架来完成半监督变化检测任务。该网络由两个组件组成，学生模型$M_{stu}$和教师模型$M_{tea}$具有相同的网络结构。通过梯度下降方法进行优化，训练学生模型从少量标记样本和大量未标记样本中提取变化特征。相反，而教师模型$M_{tea}$用于生成伪标签来指导学生学习未标记的数据，教师模型使用EMA方法更新参数。
+
+无标记样本在输入到教师和学生网络之前会分别经历弱增强$A_{w}(\cdot)$以及进一步的强增强$A_{s}(\cdot)$过程，以提供输出一致性正则化项。
+
+\textbf{训练目标}：目标是最小化模型在$D_{l}$上训练的监督损失$L_s$和在$D_{u}$上训练的无监督损失$L_u$。在训练过程中，样本以随机打乱的批次（$B_l$和$B_u$）的形式输入网络。一个小批次内在标记样本上的$L_s$损失计算为其预测概率$P_{i}^{l}$与真实标签$y_{i}^{l}$（Ground Truth，GT）之间的交叉熵（Cross Entropy， CE）：
+\begin{equation}
+  \label{eq:AdaLossS}
+  \mathcal{L}_{s}=\frac{1}{\left|\mathcal{B}_{l}\right|} \sum_{i=1}^{\left|\mathcal{B}_{l}\right|} \mathrm{CE}\left(p_{i}^{l}, y_{i}^{l}\right)
+\end{equation}
+
+其中$\mathcal{B}_{l}$表示标记样本mini-batch的大小，$p_{i}^{l}$表示学生模型对第i对无标注图像对的预测概率。
+
+一个批次内在未标记样本上的无监督损失$L_u$也类似，这里我们使用来自$M_{tea}$的伪标签作为监督，因此$L_u$计算为：
+\begin{equation}
+  \label{eq:AdaLossU}
+  \mathcal{L}_{u}=\frac{1}{\left|\mathcal{B}_{u}\right|} \sum_{j=1}^{\left|\mathcal{B}_{u}\right|} \mathrm{CE}\left(p_{s, j}^{u}, \hat{y}^{u}_{i}\right)
+\end{equation}
+\begin{equation}
+  \label{eq:pesudo}
+  \hat{y}^{u}_{i}={\arg \max } \left(p_{w, j}^{u}\right)>\tau
+\end{equation}
+其中$\mathcal{B}_{u}$表示未标记样本mini-batch的大小，$p_{w, j}^{u}=M_{t e a}^{\theta^{\prime}}\left(w_{a, j}^{u}, w_{b, j}^{u}\right)$表示教师模型对第i对弱增强未标记图像对的变化的预测概率结果，进一步利用$\arg \max$算子对其进行取最大运算得到伪标签$\hat{y}^{u}_{i}$，如格式\ref{eq:pesudo}所示，$p_{s, j}^{u}=M_{s t u}^{\theta}\left(s_{a, j}^{u}, s_{b, j}^{u}\right)$表示教师模型对第i对强增强未标记图像对的变化检测预测概率，$\tau$为固定的筛选阈值，用于剔除低置信的预测。
+
+综上所述，AdaSemiCD训练过程总的损失为：
+\begin{equation}
+  \label{eq:AdaLoss}
+  \mathcal{L}=\mathcal{L}_{s}+\lambda(\cdot) \mathcal{L}_{u}
+\end{equation}
+
+以往的研究\cite{sohn2020fixmatch}\cite{transformation_medical}均采用固定值表示$\lambda(\cdot)$。然而，我们认为这种方法不适合单阶段半监督学习算法。在初始训练阶段，我们的模型对未标记的样本生成的伪标签是高度不可靠的；在这个阶段过度依赖无监督训练可能会引入严重的噪声。相反，随着训练进入中后期阶段，模型越来越多地从有限的标记数据中学习，伪标签的质量得到提高，这时减少监督训练相对于非监督训练的比例是合理的。为了减轻过拟合现象和增强特征空间，必须实现一个受控过程来动态调整这两个分量在损失函数中的贡献。我们使用一个预热过程来控制未标记部分的训练速度。$\lambda(\cdot)$为无监督损失随训练步长变化的权值，用于动态调整不同阶段有监督和无监督训练的比例，表达式如\ref{eq:ramp-up}所示。
+\begin{equation}
+  \label{eq:ramp-up}
+  \lambda(\cdot)=w_{\max } \times e^{-\phi \times\left(1-\text { iter }_{\text {cur }} / \text { iter }_{\max }\right)^{2}}
+\end{equation}
+
+其中$w_{\max }$和$\phi$是超参数，$w_{\max }$表示无监督损失的最大可达权重，$\phi$用于控制上升的剧烈程度；$\text { iter }_{\text {cur }}$表示当前迭代周期；$\text { iter }_{\text {max }}$为预热过程的总步长，由$\gamma$与总训练迭代次数相乘得到，且$0<\gamma<1.0$；在上升过程之后，无监督损失的权重保持为$w_{\max }$不变。在训练的早期，该权值相对较低，无监督训练的作用可以忽略不计，但在训练的中后期，该权值逐渐增大，加权后的无监督损失超过了有监督损失，因此无监督训练占主导。
+
+\textbf{训练策略}：学生网络的参数$\theta$通过随机梯度下降（SGD）技术来调整，以最小化总体损失$\mathcal{L}$，而教师网络的参数$\theta'$通过学生模型参数$\theta$在训练时间序列上的指数移动平均来更新，如\ref{eq:ema}所示。超参数$\beta$作为动量参数，$\beta$值越大，移动指数平均的窗口越宽。通常，$\beta$选择接近1.0的数字，例如在本研究中，选择0.996。
+\begin{equation}
+  \label{eq:ema}
+  \theta^{\prime}=\beta \theta^{\prime}+(1-\beta) \theta
+\end{equation}
+
+\textbf{自适应模块}：半监督学习的本质在于伪标签的质量。然而，很明显，前面提到的过程没有考虑到不同样本个体对模型训练的不同影响。本章研究主要关注与伪标签生成直接相关的两个元素：未标记图像对，以及伪标签生成网络（即教师模型）在识别变化方面的性能。为了给未标记信息提供更可靠的监督指导，减少训练的不确定性，我们设计了一种自适应训练策略来解决这两个关键问题。我们首先设计了一个度量标准，用于量化伪标签的不确定性，作为自适应调整的基础。接下来，我们提出图像层面对未标记的训练样本进行自适应改造。此外，还提出在训练阶段对教师网络应用自适应选择性的EMA更新，以集成更加正确的参数，从而产生更一致和更高质量的伪标签。这些努力将在下面的小节中进行详细阐述。
 \subsection{伪标签评估指标设计}
-\subsection{自适应样本增强机制}
+为了通过准确测量伪标签的质量来提高其有效性，关键的一步就是评估指标的设计。这个度量将有助于识别可靠的标签和确定每个训练样本的效力。与带有标记图像对的场景不同，可以将真实标签作为基准，通过预测与真是标签的平均交并比、F1分数等来评估模型的推理质量，而伪标签缺乏任何这样的参考，其只能与自己进行比较。
+
+因此，我们专门为伪标签设计了一个可量化的评估指标，旨在总体信息熵的基础之上，同时考虑到类别不平衡和混淆区域等因素。信息熵是一种衡量模型性能的常用指标，计算公式如下：
+\begin{equation}
+  \label{eq:entropy}
+  E\left(x_{i}\right)=-P\left(x_{i}\right) \log _{2} P\left(x_{i}\right)
+\end{equation}
+
+其中$P\left(x_{i}\right)$为模型对于样本$x_{i}$的输出概率。我们认为，预测值中的信息熵越低，预测结果的可信度越高。相反，信息熵越高，预测结果的变化越大，同一像素上的预测概率分布越均匀，类别之间的差异越小。
+\begin{figure}[htb]
+  \centering
+  \includegraphics[scale=0.25]{images/imbalance.png}
+  \caption{
+    公开变化检测数据集的标注类别统计。
+  }
+  \label{fig:Adasemicd_imbalance}
+\end{figure}
+在变化检测任务中，由于类别不平衡带来的巨大挑战，直接应用信息熵通常不会产生良好的结果。如图\ref{fig:Adasemicd_imbalance}所示，我们在10个公开的变化检测数据集上进行了统计分析，变化和不变类别的比例是极度失衡的。这种类别不平衡现象会导致模型在训练过程中学习目标类别不够充分，而过度地拟合不变类别的特征分布。因此，在推理过程中，模型更倾向于将像素分类为背景类。因此，尽管该模型的总体精度（OA）看起来很高，但在目标类别的交并比（$IoU_c$）上的性能仍然令人不满意。为了在评估伪标签质量时最大限度地减少这种类别不平衡的影响，我们在计算信息熵时为两个类别分配了不同的权重，如\autoref{eq:balance}所示。
+\begin{equation}
+  \label{eq:balance}
+  E^{\prime}(X)=w_{1} \times E\left(x_{i}\right)[0]+w_{0} \times E\left(x_{i}\right)[1]
+\end{equation}
+
+其中$w_{0}$和$w_{0}$分别表示当前小批次中属于不变类和变化类别的像素的比例。其计算公式如\autoref{eq:w0}和\autoref{eq:w1}所示。
+\begin{equation}
+  \label{eq:w0}
+  w_{0}=\frac{\sum_{i=1}^{|B u|} \sum_{k=1}^{H \times W}\left(P\left(x_{i}\right)==0\right)}{|B u| \times H \times W}
+\end{equation}
+\begin{equation}
+  \label{eq:w1}
+  w_{1}=\frac{\sum_{i=0}^{|B u|} \sum_{k=0}^{H \times W}\left(P\left(x_{i}\right)==0\right)}{|B u| \times H \times W}
+\end{equation}
+
+此外，来自边界、目标与背景相似的区域的像素，模型的预测通常具有很大的不确定性，应该得到更多的重视。首先，我们通过计算两类预测概率之差的绝对值来增强这些易混区域的影响:
+\begin{equation}
+  \label{eq:abs}
+  D\left(x_{i}\right)=\operatorname{abs}\left(P\left(x_{i}\right)[1]-P\left(x_{i}\right)[0]\right)
+\end{equation}
+
+这里，$\operatorname{abs}$表示取绝对值运算，这是一种用来防止前后时相变化检测不幂问题的措施。然后利用信息熵进行逐像素相乘运算，最终得到图像的不确定性映射图$U\left(x_{i}\right)$：
+\begin{equation}
+  \label{eq:uncertainty}
+  U\left(x_{i}\right)=1-D\left(x_{i}\right) \cdot E^{\prime}\left(x_{i}\right)
+\end{equation}
+
+显然，在低信息熵的像素位置，该过程不会导致显著的变化，而在高信息熵的像素位置，其值将显著减小，直接使用该指标与所表达的意义相反。因此，我们采用校正信息熵的逆作为其描述。
+
+综上所述，为了评估变化检测伪标签的质量，我们提出了一个可量化的计算度量$U$来衡量预测不确定性，该度量考虑了类别不平衡等因素并增加了对混淆区域的关注，从而在总体信息熵的基础上表达了更多有价值的信息。
+\subsection{自适应样本融合机制}
+图像融合经常被用来增强或者改造训练样本以提高样本多样性，CutMix\cite{yun2019cutmix}和MixUp\cite{zhang2017mixup}是典型的融合方法。在本研究中，我们的目标是利用图像融合技术来排除训练样本中的不可靠区域。这个过程包括两个步骤：1）融合区域选择；2）融合图像选择。
+
+\textbf{融合区域的自适应选择}。与传统的随机选择混合区域的CutMix技术不同，我们的方法更加精细。首先我们将初始化一个随机大小的边界框，然后沿着图像坐标滑动窗口，维护一个总体最大不确定性框，最终选择总体不确定性最高的区域作为融合区域。
+
+这些区域通常是边界或复杂的区域，模型在这些区域的检测性能受限，很难准确识别变化目标，因此如果不做处理地直接用于训练，就会引入大量的噪声干扰，这对模型训练有很大的影响。
+
+\textbf{融合内容的自适应选择}。对于最大不确定性的区域，我们可以选择从样本集中选择一个其余更可信的样本替代这部分，可选样本来自标记数据集$B_l$或y有着更高可靠性的未标记数据集$B_u$。这种策略可以防止过度使用仅有的少量标记样本，进一步降低过拟合的风险。这里融合内容使用图像块而不使用实例对象，这是因为我们认为过多的人为干预可能会破坏模型的泛化能力，并且仅替换实例对象可能造成周围像素的失真。
+
+融合内容的选择主要通过自适应调整决策上界来确定融合内容。我们直接使用同一个小批次内计算的不确定性均值作为决策上界，对每个小批次随机生成一个概率值（0到1之间），如果超过不确定性均值，代表当前样本包含的噪声过多，则随机从标记图像批次中选择一对图像作为融合内容。我们会维护根据不确定性排序维护一个批次不确定性队列集合，如果小于此上界，则从此队列集合中均匀选择TopK的未标记的图像对。很容易理解，无标注样本的伪标签质量越高。可以被认为足够可靠。而不确定性越高的样本噪声越大，融合标记样本可以显著降低噪声密度，融合过程如图\ref{fig:Adasemicd_fram}左下角的AdaFusion子图。
 \subsection{自适应师生模型参数更新机制}
-\section{实验结果及分析}
-\subsection{变化检测数据集介绍}
-\subsection{评估指标}
-\subsection{实验设置}
-\subsection{对比试验}
-\subsection{消融实验}
-\section{本章小结}
+在平均教师框架中，通过对学生模型参数在时间序列上的移动指数平均得到教师模型的参数，这种方法与共享权重的孪生网络相比，更加稳定可靠。然而，我们对平均教师模型的期望是达到共同进化的最优状态，在这种状态下，教师模型是不断进化的学生模型的累积表示。实现这种共同进化的关键因素是每次教师模型更新时，学生模型是处于更优状态还是处于波动状态。那么，我们如何评估学生模型的状态呢？这个问题本质上与训练过程的验证阶段类似。通常，在训练几个epoch后，我们评估当前模型，将验证集中的样本输入到模型中进行推理，并将结果与实际标签进行比较以确定模型的表现。然而，如果我们在每次迭代之后都进行这样的验证过程，那样是非常耗费计算资源的，导致训练时间的显著增加，这是一种不现实的方案。降低验证集中的样本数量（仅为几对）可能会解决可行性问题，但样本量太小无法全面准确地评估模型的性能，这会带来新的挑战。那么，有没有一种方法可以将这两个概念融合在一起呢？
 
+\begin{algorithm}[tb]
+  \caption{The AdaEMA algorithm.}
+  \label{alg:AdaEMA}
+  \begin{algorithmic}[1] % 这个1 表示每一行都显示数字
+    \Require ~~\\
+    Student model $M_{stu}^{\theta}$, Teacher model $M_{tea}^{\theta'}$ \\
+    The set of training samples for current batch $\mathcal{B} = \left \{\mathcal{B}_l, \mathcal{B}_u\right \}$ \\
+  \Ensure ~~\\
+    Updated Teacher model, $M_{tea}^{\hat{\theta}}$ \\
+  \State Calculate the loss $\mathcal{L}_{s}$ on labeled samples $\mathcal{B}_l$ with Eq.~\ref{eq:AdaLossS};
+  \State Calculate the loss $\mathcal{L}_{u}$ on unlabeled samples $\mathcal{B}_u$ with Eq.~\ref{eq:AdaLossU};
+  \State Update the student model $M_{stu}^{\theta}$ to $M_{stu}^{\theta'}$ by SGD to minimize the total loss following Eq.~\ref{eq:AdaLoss};
+  \State Calculate the uncertainty ${U}_{tea}$ of pseudo-labels generated on $\mathcal{B}_u$ by the teacher model $M_{tea}^{\theta'}$ according to Eq.~\ref{eq:uncertainty};
+  \State Calculate the uncertainty ${U}_{stu}$ on $\mathcal{B}_u$ by updated student model $M_{stu}^{\theta'}$ according to Eq.~\ref{eq:uncertainty};
+  \State Calculate the upper bound on the probability of update $\tau$ according to Eq.~\ref{eq:varepsilon} and Eq.~\ref{eq:tau};
+  \If{$random(\cdot)<\tau$}
+    \State Update the teacher model to $M_{tea}^{\hat{\theta}}$ by Eq.~\ref{eq:ema};
+  \Else
+    \State $M_{tea}^{\hat{\theta}} = M_{tea}^{\theta'}$;
+  \EndIf
+  \State \textbf{Return:} $M_{tea}^{\hat{\theta}}$;
+  \end{algorithmic}
+\end{algorithm}
+\begin{figure}[htb]
+  \centering
+  \includegraphics[scale=0.30]{images/vis_plot.png}
+  \caption{
+    AdaSemiCD与SOTA方法在10个数据集上的性能对比折线图。
+  }
+  \label{fig:iou_plot}
+\end{figure}
+在每个训练阶段，我们首先根据第3.3.1小节中描述的训练策略更新学生模型的参数$M^{\theta}_{stu}$，从而得到$M^{\theta'}_{stu}$。接下来，我们在当前的未标记训练样本批次$B_u$上评估更新后的学生模型$M^{\theta'}_{stu}$和教师模型$M^{\theta}_{tea}$。我们根据\ref{eq:uncertainty}计算不确定性图，并将其分别表示为$U_{tea}$和$U_{stu}$。进一步根据\ref{eq:varepsilon}得到不确定性变化值$\varepsilon$。
+\begin{equation}
+  \label{eq:varepsilon}
+  \varepsilon=\frac{\sum U_{s t u}-\sum U_{\text {tea }}}{\left|B_{u}\right|}
+\end{equation}
 
-\chapter{基于SAM改善伪标签的半监督变化检测算法}
-\section{引言}
-\section{基于SAM改善伪标签的半监督变化检测框架}
-\subsection{整体框架}
-\subsection{基于双时分割掩码差分的伪标签生成}
-\subsubsection{像素级差分算法}
-\subsubsection{实例级差分算法}
-\subsection{基于双时特征差分的伪标签生成}
+如果$\varepsilon < 0$，则代表模型性能发生退化或处于振荡。相反，当$\varepsilon \geqslant 0$，模型得到正确的训练。最终，只有进化的学生模型被选择参与到教师模型参数的更新中，为了加入一定的动态性，我们据此得到一个更新概率上界，如\autoref{eq:tau}所示，再根据此上界决策此迭代轮次是否更新。
+\begin{equation}
+  \label{eq:tau}
+  \tau=\left\{\begin{array}{ccc}
+    \frac{1}{\text { iter }^{2}+\epsilon} & , & \varepsilon \leq 0 \\
+    1.0 & , & \varepsilon>0
+    \end{array}\right.
+\end{equation}
+
+这里，$\epsilon=1e-5$用来防止除数为零，$iter$表示当前的迭代计数。如果模型不确定性变化值$\varepsilon \leqslant 0$，也不会完全丢弃它们。而是赋予一个较低的概率上界去选择更新。有了这个上限规则（范围从0到1），引入了一些随机性来确定教师网络参数更新，进一步的细节可以在算法\ref{alg:AdaEMA}中找到。
 \section{实验结果及分析}
+\begin{table}[!htbp]
+  \centering
+  % \tiny
+  \scriptsize
+  \caption{不同CD方法在二值建筑物变化检测数据集上的平均定量性能对比。}
+  \resizebox{0.8\textwidth}{!}{
+  \begin{tabular}{p{20mm}p{20mm}p{8mm}p{8mm}cp{8mm}p{8mm}cp{8mm}p{8mm}cp{8mm}p{8mm}} %
+      \toprule
+      \multirow{2}{*}{Dataset} & \multirow{2}{*}{\parbox[c]{.2\linewidth}{Method}} & \multicolumn{2}{c}{5\%} & & \multicolumn{2}{c}{10\%} & & \multicolumn{2}{c}{20\%} & & \multicolumn{2}{c}{40\%}\\
+      \cmidrule{3-4} \cmidrule{6-7} \cmidrule{9-10} \cmidrule{12-13}
+      & & {$IoU^c$} & {OA} && {$IoU^c$} & {OA} & & {$IoU^c$} & {OA} &&{$IoU^c$} & {OA}\\
+      \midrule
+      \multirow{8}{*}{LEVIR-CD}
+      & Sup. only   &   61.0 & 97.60 && 66.8 & 98.13 && 72.3 & 98.44 && 74.9 & 98.60 \\ %40
+      & AdvEnt\cite{vu2019advent}& 66.1 & 98.08 && 72.3 & 98.45 && 74.6 & 98.58 && 75.0 & 98.60 \\ %40
+      & s4GAN\cite{mittal2019semi}& 64.0 & 97.89 && 67.0 & 98.11 && 73.4 & 98.51 && 75.4 & 98.62 \\
+      & SemiCDNet\cite{peng2021SemiCDNet} & 67.6 & 98.17 && 71.5 & 98.42 && 74.3 & 98.58 && 75.5 & 98.63 \\ %40
+      & RCR\cite{bandara2022RCR}& 72.5 & 98.47 && 75.5 & 98.63 && 76.2 & 98.68 && 77.2 & 98.72 \\
+      & FPA\cite{Zhang2023FPA}& \underline{73.7} & \underline{98.57} && \underline{76.6} & \underline{98.72} && \underline{77.4} & \underline{98.75} && \underline{77.0} & \underline{98.74} \\
+      \rowcolor{mycyan}
+      \multirow{-8}{*}{\cellcolor{white}}& \cellcolor{white}AdaSemiCD   &   \textbf{77.7} & \textbf{98.78} && \textbf{79.4} & \textbf{98.87} && \textbf{80.3} & \textbf{98.92} && \textbf{80.6} & \textbf{98.93} \\%40
+      \cline{2-13}
+      & Oracle & \multicolumn{11}{c}{$ IoU^c$=\textcolor{red}{\bf 77.9} and OA=\textcolor{red}{\bf 98.77}} \\
+      \bottomrule
+      %\midrule
+      \multirow{8}{*}{LEVIR-CD+}
+      & Sup. only   &   52.0 & 97.72 && 58.4 & 98.06 && 66.1 & 98.31 && 66.2 & 98.42 \\ %40
+      & AdvEnt\cite{vu2019advent}& 52.2 & 97.68 && 59.9 & 98.11 && 65.9 & 98.37 && 68.0 & 98.51 \\ %40
+      & s4GAN\cite{mittal2019semi}& 46.5 & 97.25 && 51.4 & 97.66 && 62.8 & 98.18 && 67.2 & 98.46 \\
+      & SemiCDNet\cite{peng2021SemiCDNet} & 52.6 & 97.66 && 60.7 & 98.24 && 64.8 & 98.37 && 66.1 & 98.38 \\ %40
+      & RCR\cite{bandara2022RCR}& \underline{64.9} & 98.25 && \underline{67.5} & \underline{98.45} && 68.5 & 98.52 && 68.4 & 98.51 \\
+      & FPA\cite{Zhang2023FPA}& 64.6 & \underline{98.30} && 67.3 & 98.40 && \underline{70.3} & \cellcolor{mycyan}\textbf{98.64} && \underline{69.0} & \underline{98.59} \\
+      \rowcolor{mycyan}
+      \multirow{-8}{*}{\cellcolor{white}}& \cellcolor{white}AdaSemiCD   &   \textbf{66.7} & \textbf{98.49} && \textbf{68.8} & \textbf{98.51} && \textbf{70.6} & \cellcolor{white}\underline{98.63} && \textbf{70.9} & \textbf{98.64} \\%40
+      \cline{2-13}
+      & Oracle & \multicolumn{11}{c}{$ IoU^c$=\textcolor{red}{\bf 70.5} and OA=\textcolor{red}{\bf 98.63}} \\
+      \bottomrule
+      % \midrule
+      \multirow{8}{*}{WHU-CD}
+      & Sup. only   &   50.0 & 97.48 && 55.7 & 97.53 && 65.4 & 98.20 && 76.1 & 98.94 \\ %40
+      & AdvEnt\cite{vu2019advent}& 55.1 & 97.90 && 61.6 & 98.11 && 73.8 & 98.80 && 76.6 & 98.94 \\ %40
+      & s4GAN\cite{mittal2019semi}& 18.3 & 96.69 && 62.6 & 98.15 && 70.8 & 98.60 && 76.4 & 98.96 \\
+      & SemiCDNet\cite{peng2021SemiCDNet} & 51.7 & 97.71 && 62.0 & 98.16 && 66.7 & 98.28 && 75.9 & 98.93 \\ %40
+      & RCR\cite{bandara2022RCR}& 65.8 & 98.37 && \underline{68.1} & \underline{98.47} && \cellcolor{mycyan}\textbf{74.8} & \underline{98.84} && \underline{77.2} & \underline{98.96} \\
+      & FPA\cite{Zhang2023FPA}& \underline{66.3} & \underline{98.45} && 57.4 & 97.69 && 62.5 & 98.48 && 73.1 & 98.69 \\
+      \rowcolor{mycyan}
+      \multirow{-8}{*}{\cellcolor{white}}& \cellcolor{white}AdaSemiCD   &   \textbf{67.8} & \textbf{98.62} && \textbf{70.8} & \textbf{98.70} && \cellcolor{white}\underline{74.7} & \textbf{98.86} && \textbf{79.6} & \textbf{99.13} \\%40
+      \cline{2-13}
+      & Oracle & \multicolumn{11}{c}{$ IoU^c$=\textcolor{red}{\bf 85.5} and OA=\textcolor{red}{\bf 99.38}} \\
+      \bottomrule
+      % \midrule
+      \multirow{8}{*}{GZ-CD}
+      & Sup. only   &   47.5 & 93.56 && 51.4 & 94.26 && 58.0 & 95.65 && 66.3 & 96.62 \\ %40
+      & AdvEnt\cite{vu2019advent}& 48.6 & 94.39 && 50.9 & 94.89 && 60.2 & 95.79 && 66.2 & 96.58 \\ %40
+      & s4GAN\cite{mittal2019semi}& 50.8 & 94.38 && 52.4 & 94.98 && 60.8 & 95.94 && 64.2 & 96.39 \\
+      & SemiCDNet\cite{peng2021SemiCDNet} & 48.4 & 93.58 && 49.7 & 94.79 && 59.0 & 95.66 && 66.3 & 96.57 \\ %40
+      & RCR\cite{bandara2022RCR}& 50.8 & 93.82 && 50.8 & 94.69 && 62.5 & 96.07 && 67.8 & 96.61 \\
+      \rowcolor{mycyan}
+      \multirow{-7}{*}{\cellcolor{white}}& \cellcolor{white}
+      FPA\cite{Zhang2023FPA}& \cellcolor{white}51.2 & \cellcolor{white}93.92 && \textbf{58.9} & \textbf{95.78} && \textbf{63.1} & \textbf{96.26} && \textbf{68.2} & \textbf{96.82} \\
+      \multirow{-8}{*}{\cellcolor{white}}& \cellcolor{white}AdaSemiCD   &   \cellcolor{mycyan}\textbf{51.6} & \cellcolor{mycyan}\textbf{94.56} && \underline{57.1} & \underline{95.57} && \underline{62.4} & \underline{96.21} && \underline{68.0} & \underline{96.75} \\%40
+      \cline{2-13}
+      & Oracle & \multicolumn{11}{c}{$ IoU^c$=\textcolor{red}{\bf 69.0} and OA=\textcolor{red}{\bf 96.93}} \\
+      \bottomrule
+      \multirow{8}{*}{EGY-CD}
+      & Sup. only   &   49.8 & 95.73 && 54.6 & 96.38 && 61.4 & 96.83 && 65.1 & 97.25 \\ %40
+      & AdvEnt\cite{vu2019advent}& 52.7 & 96.01 && 57.8 & 96.58 && 62.6 & 96.86 && 64.0 & 97.19 \\ %40
+      & s4GAN\cite{mittal2019semi}& 52.9 & 95.94 && 58.6 & 96.50 && 64.7 & 97.09 && 64.9 & 97.27 \\
+      & SemiCDNet\cite{peng2021SemiCDNet} & 52.4 & 96.00 && 57.9 & 96.31 && 62.8 & 96.95 && 63.8 & 97.19 \\ %40
+      & RCR\cite{bandara2022RCR}& \underline{58.1} & 96.50 && \underline{61.9} & 96.77 && 63.9 & 97.08 && 64.2 & 97.18 \\
+
+      \multirow{-7}{*}{\cellcolor{white}}& \cellcolor{white}
+      FPA\cite{Zhang2023FPA}& 57.5 & \underline{96.52} && 60.1 & \cellcolor{mycyan}\textbf{96.86} &\cellcolor{mycyan}& \cellcolor{mycyan}\textbf{65.2} & \cellcolor{mycyan}\textbf{97.25} && \underline{65.7} & \underline{97.34} \\
+
+      \rowcolor{mycyan}
+      \multirow{-8}{*}{\cellcolor{white}}& \cellcolor{white}AdaSemiCD   &   \textbf{59.0} & \textbf{96.55} && \textbf{60.5} & \cellcolor{white}\underline{96.80} & \cellcolor{white} & \cellcolor{white}\underline{65.0} & \cellcolor{white}\underline{97.20} & \cellcolor{white}& \textbf{67.4} & \textbf{97.39} \\%40
+      \cline{2-13}
+      & Oracle & \multicolumn{11}{c}{$ IoU^c$=\textcolor{red}{\bf 67.6} and OA=\textcolor{red}{\bf 97.54}} \\
+      \bottomrule
+      \multirow{8}{*}{HRCUS-CD}
+      & Sup. only   &   29.5 & 98.11 && 36.0 & 98.45 && 43.4 & 98.68 && 48.9 & 98.84 \\ %40
+      & AdvEnt\cite{vu2019advent}& 29.1 & 98.11 && 36.9 & 98.40 && 42.5 & 98.61 && 48.8 & 98.71 \\ %40
+      & s4GAN\cite{mittal2019semi}& 25.0 & 97.86 && 28.2 & 98.24 && 40.1 & 98.62 && 50.3 & 98.85 \\
+      & SemiCDNet\cite{peng2021SemiCDNet} & 28.4 & 98.00 && 34.7 & 98.44 && 44.1 & 98.68 && 48.5 & 98.74 \\ %40
+      & RCR\cite{bandara2022RCR}& \underline{36.1} & 98.36 && 42.1 & \underline{98.69} && 45.3 & 98.76 && 49.6 & 98.66 \\
+
+      & FPA\cite{Zhang2023FPA}& 35.2 & \underline{98.37} && \cellcolor{mycyan}\textbf{43.7} & 98.65 && \underline{46.7} & \underline{98.82} && \cellcolor{mycyan}\textbf{51.2} & \textbf{98.81} \\
+
+      \rowcolor{mycyan}
+      \multirow{-8}{*}{\cellcolor{white}}& \cellcolor{white}AdaSemiCD   &  \textbf{37.8} & \cellcolor{mycyan}\textbf{98.59} && \cellcolor{white}\underline{42.6} & \textbf{98.70} && \textbf{48.1} & \textbf{98.84} && \cellcolor{white}\underline{50.8} & \underline{98.87} \\%40
+      \cline{2-13}
+      & Oracle & \multicolumn{11}{c}{$ IoU^c$=\textcolor{red}{\bf 59.0} and OA=\textcolor{red}{\bf 99.06}} \\
+      \bottomrule
+  \end{tabular}
+  }
+  \label{tab:Ada-building}
+\end{table}
 \subsection{实验设置}
+\textbf{数据划分}：我们对所有数据集遵循相同的标记比例划分设置，我们选择5$\%$，10$\%$，20$\%$和40$\%$作为标记样本的比例，此比例表示我们将整个训练集的这部分样本视作有标记训练样本，其余样本我们仅使用训练图像对而不使用相应的真实标签，即视作无标记样本。其中在LEVIR-CD和WHU-CD上我们遵循\cite{bandara2022RCR}\cite{Zhang2023FPA}中的半监督划分，并对其他数据集执行我们自己的随机划分，但我们对于所有对比实验都是使用此相同的训练样本集进行公平的实验对比。
+
+\textbf{实现细节}：为了防止网络结构带来的性能差异影响我们的结论，我们所有对比方法均使用ResNet50+PPM（Pyramid pooling module，特征金字塔池化模型）作为我们的变化检测网络。我们将初始学习率设置为0.01，它以0.9的动量随训练进程逐渐线性降低到1e-4，并使用SGD优化器训练所有方法。所有的模型都进行了80个epoch的训练，每个批次的标记和未标记mini-batch大小均设置为8。此外，所采用的所有数据增强方式都与\cite{Zhang2023FPA}中使用的增强方式相同，其中弱增强包括随机翻转、随机缩放、随机裁剪，强增强包括\cite{cubuk2020randaugment}中引用的9种强增强方式。由于标记数据的数量有限，模型对伪标签的过滤阈值非常敏感，在之前的研究中\cite{Zhang2023FPA}已经对阈值大小进行了消融研究，因此我们在对10个数据集进行的实验中将所有模型的阈值$\tau$按照经验都设置为0.95，并根据\cite{bandara2022RCR}$\phi$设置为5。我们所有的实验均利用PyTorch框架实现并且在4块NVIDIA GeForce RTX 3090 gpu上进行模型训练。
 \subsection{对比试验}
+我们与几种最先进的半监督变化检测方法进行了比较，其中SemiCDNet\cite{peng2021SemiCDNet}、RCR\cite{bandara2022RCR}和FPA\cite{Zhang2023FPA}是过去几年出现的获得最优性能的半监督变化检测方法。此外，我们还比较了两种半监督语义分割方法，s4GAN\cite{mittal2019semi}和AdvEnt\cite{vu2019advent}。
+\subsubsection{定量对比}
+我们在所有10个数据集上进行了实验，表\ref{tab:Ada-building}和表\ref{tab:Ada-mutil}分别报告了我们在建筑物变化检测数据集和多类变化检测数据集上的实验结果。其中，表中的Sup.Only是指仅在有限的标记数据集上进行监督训练，而Oracle是在整个全部训练数据集上进行全监督训练的结果。另外图\ref{fig:iou_plot}更直观地展示了我们的所有实验定量结果。值得注意的是，我们的方法在所有数据集的几乎所有半监督划分设置中都实现了最先进的性能。可以肯定的是，在大多数情况下，所有的半监督变化检测方法在相应的划分设置下都比监督方法表现得更好，这证明了半监督方法在从大量未标记的训练样本中学习到了更多的知识，同时，我们的方法取得的领先证明了我们对于如何高效、正确地从未标记样本集中学习的自适应机制是具有实际意义的。
+
+\textbf{建筑物变化检测}:
+如表\ref{tab:Ada-building}所示，其中蓝色高亮部分代表着最优结果，下划线标注的是次优结果。我们的AdaSemiCD在其中4个数据集上实现了最先进的性能，LEVIR-CD、LEVIR-CD+、WHU-CD和HRCUS-CD上的平均$IoU_c$分别提高了3.1、1.3、1.7和0.4个百分点。GZ-CD和EGY-CD在某些实验设置上取得的性能略低于FPA\cite{Zhang2023FPA}，但在标记数据极其稀缺的5$\%$标记率情况下仍能获得最佳结果，在其他一些实验设置下也能获得次优结果。不可忽视的是，我们的方法在LEVIR-CD、LEVIR-CD+和EGY-CD上仅使用10$\%$或20$\%$的标记数据就达到甚至超过了完全监督训练的结果，因为这些建筑物变化检测数据集中的样本类别是非常不平衡的，我们的方法考虑到了这一点。并且其变化区域比较规则，变化类型比较单一，我们的方法能够生成足够可靠的高质量伪标签。FPA\cite{Zhang2023FPA}的实验结果也证明了这一点，可以观察到相同的趋势，其中标记率在10$\%$到40$\%$之间实验结果并没有显著增加。
+\begin{table}[!htbp]
+  \centering
+  % \tiny
+  \scriptsize
+  \caption{不同CD方法在多类变化检测数据集上的平均定量性能对比。}
+  \resizebox{0.8\textwidth}{!}{
+    \begin{tabular}{p{20mm}p{20mm}p{8mm}p{8mm}cp{8mm}p{8mm}cp{8mm}p{8mm}cp{8mm}p{8mm}} %
+      \toprule
+      \multirow{2}{*}{Dataset} & \multirow{2}{*}{\parbox[c]{.2\linewidth}{Method}} & \multicolumn{2}{c}{5\%} & & \multicolumn{2}{c}{10\%} & & \multicolumn{2}{c}{20\%} & & \multicolumn{2}{c}{40\%}\\
+      \cmidrule{3-4} \cmidrule{6-7} \cmidrule{9-10} \cmidrule{12-13}
+      & & {$IoU^c$} & {OA} && {$IoU^c$} & {OA} & & {$IoU^c$} & {OA} &&{$IoU^c$} & {OA}\\
+      \midrule
+      \multirow{8}{*}{CDD-CD}
+      & Sup. only   &   60.4 & 94.25 && 67.9 & 95.46 && 75.6 & 96.59 && 82.3 & 97.56 \\ %40
+      & AdvEnt\cite{vu2019advent}& 63.3 & 94.65 && 71.2 & 96.01 && 79.3 & 97.14 && \underline{82.9} & \underline{97.66} \\ %40
+      & s4GAN\cite{mittal2019semi}& 62.3 & 94.69 && 71.0 & 95.94 && 79.0 & 97.10 && 82.8 & 97.63 \\
+      & SemiCDNet\cite{peng2021SemiCDNet} & 63.5 & 94.68 && 71.2 & 95.99 && 79.1 & 97.13 && 82.8 & 97.63 \\ %40
+      & RCR\cite{bandara2022RCR}& 67.6 & 95.40 && \underline{75.5} & \underline{96.57} && \underline{80.2} & \underline{97.26} && 82.7 & 97.61 \\
+      & FPA\cite{Zhang2023FPA}& \underline{68.9} & \underline{95.66} && 74.9 & 96.55 && 79.7 & 97.20 && 81.1 & 97.37 \\
+      \rowcolor{mycyan}
+      \multirow{-8}{*}{\cellcolor{white}}& \cellcolor{white}AdaSemiCD   &   \textbf{70.1} & \textbf{95.89} && \textbf{77.3} & \textbf{96.89} && \textbf{82.1} & \textbf{97.56} && \textbf{83.9} & \textbf{97.80} \\%40
+      \cline{2-13}
+      & Oracle & \multicolumn{11}{c}{$ IoU^c$=\textcolor{red}{\bf 87.8} and OA=\textcolor{red}{\bf 98.10}} \\
+      \bottomrule
+      %\midrule
+      \multirow{8}{*}{DSIFN-CD}
+      & Sup. only   &   34.8 & 78.34 && \underline{38.9} & 83.41 && 40.2 & 87.00 && 39.6 & 87.00 \\ %40
+      & AdvEnt\cite{vu2019advent}& 31.8 & 77.83 && 36.3 & 83.86 && 40.8 & 85.92 && 37.4 & 86.31 \\ %40
+      & s4GAN\cite{mittal2019semi}& 36.6 & \underline{84.10} && 34.8 & \underline{86.87} && 37.9 & \cellcolor{mycyan}\textbf{87.69} && \underline{40.1} & 86.52 \\
+      & SemiCDNet\cite{peng2021SemiCDNet} & 33.6 & 78.60 && 37.9 & 84.18 && 39.1 & 86.77 && 39.1 & \underline{87.05} \\ %40
+      & RCR\cite{bandara2022RCR}& 26.7 & 83.78 && 32.9 & 86.05 && 40.8 & 86.70 && 36.7 & 86.08 \\
+      & FPA\cite{Zhang2023FPA}& \cellcolor{mycyan}\textbf{39.2} & \cellcolor{mycyan}\textbf{84.27} && 38.5 & \cellcolor{mycyan}\textbf{87.12} && 36.0 & \underline{87.41} && 35.8 & 86.50 \\
+      % \rowcolor{mycyan}
+      \multirow{-8}{*}{\cellcolor{white}}& \cellcolor{white}AdaSemiCD   &   \cellcolor{white}\underline{36.9} & \cellcolor{white}80.46 && \cellcolor{mycyan}\textbf{39.2} & 82.94 && \cellcolor{mycyan}\textbf{41.1} & 85.45 && \cellcolor{mycyan}\textbf{45.1} & \cellcolor{mycyan}\textbf{87.12} \\%40
+      \cline{2-13}
+      & Oracle & \multicolumn{11}{c}{$ IoU^c$=\textcolor{red}{\bf 37.1} and OA=\textcolor{red}{\bf 86.82}} \\
+      \bottomrule
+      % \midrule
+      \multirow{8}{*}{SYSU-CD}
+      & Sup. only   &   62.9 & 89.57 && 64.4 & 90.18 && 66.0 & 90.82 && 66.4 & 90.93 \\ %40
+      & AdvEnt\cite{vu2019advent}& 61.2 & 89.36 && 64.5 & 90.18 && 65.7 & 90.35 && 68.3 & 91.24 \\ %40
+      & s4GAN\cite{mittal2019semi}& 64.4 & 90.02 && 66.5 & 90.48 && 66.9 & 90.26 && 68.2 & 91.51 \\
+      & SemiCDNet\cite{peng2021SemiCDNet} & 61.7 & 89.32 && 64.8 & 90.25 && 66.7 & 90.97 && 67.0 & 91.08 \\ %40
+      & RCR\cite{bandara2022RCR}& 62.5 & 89.76 && 66.0 & 90.75 && 64.1 & 90.22 && 65.3 & 90.56 \\
+      & FPA\cite{Zhang2023FPA}& \cellcolor{mycyan}\textbf{67.7} & 90.95 && \underline{68.3} & \underline{91.09} && \underline{70.1} & \underline{92.01} && \underline{69.3} & \cellcolor{mycyan}\textbf{91.97} \\
+      \rowcolor{mycyan}
+      \multirow{-8}{*}{\cellcolor{white}}& \cellcolor{white}AdaSemiCD   &   \cellcolor{white}\underline{67.5} & \textbf{91.16} && \textbf{68.7} & \textbf{91.59} && \textbf{70.1} & \textbf{92.03} && \textbf{69.9} & \cellcolor{white}\underline{91.90} \\%40
+      \cline{2-13}
+      & Oracle & \multicolumn{11}{c}{$ IoU^c$=\textcolor{red}{\bf 77.9} and OA=\textcolor{red}{\bf 98.77}} \\
+      \bottomrule
+      % \midrule
+      \multirow{8}{*}{CL-CD}
+      & Sup. only   &   18.1 & 91.90 && 31.4 & 92.42 && 37.2 & 93.32 && 45.9 & \underline{94.98} \\ %40
+      & AdvEnt\cite{vu2019advent}& 24.3 & 92.13 && 33.2 & 93.01 && 37.6 & 93.59 && 42.9 & 94.06 \\ %40
+      & s4GAN\cite{mittal2019semi}& 22.1 & 92.00 && 26.6 & 93.09 && 37.4 & 93.59 && 43.4 & 93.87 \\
+      & SemiCDNet\cite{peng2021SemiCDNet} & 24.0 & \underline{92.20} && 28.3 & \underline{93.42} && 36.2 & 92.41 && 45.3 & 94.22 \\ %40
+      & RCR\cite{bandara2022RCR}& 27.1 & 91.63 && 32.8 & 92.99 && 36.4 & 93.07 && \underline{48.5} & 94.94 \\
+      & FPA\cite{Zhang2023FPA}& \underline{29.0} & 91.00 && \cellcolor{mycyan}\textbf{38.2} & \cellcolor{mycyan}\textbf{93.37} && \underline{39.6} & \underline{93.88} && 43.1 & 94.15 \\
+      \rowcolor{mycyan}
+      \multirow{-8}{*}{\cellcolor{white}}& \cellcolor{white}AdaSemiCD   &   \textbf{30.6} & \textbf{92.52} && \cellcolor{white}\underline{33.5} & \cellcolor{white}{92.40} && \textbf{41.6} & \textbf{94.21} && \textbf{49.1} & \textbf{95.85} \\%40
+      \cline{2-13}
+      & Oracle & \multicolumn{11}{c}{$ IoU^c$=\textcolor{red}{\bf 77.9} and OA=\textcolor{red}{\bf 98.77}} \\
+      \bottomrule
+  \end{tabular}
+  }
+  \label{tab:Ada-mutil}
+\end{table}
+
+此外，从实验结果来看，由于背景类占多数，所有方法在这些二值建筑物变化检测数据集上的总体准确率（OA）都很高。OA往往直接映射着平均交并比$IoU_c$， 即便是小幅度的OA提升，$IoU_c$就会有比较明显的改善。我们的AdaSemiCD在所有数据集上几乎都提高了预测的总体准确率，因为它极大地消除了噪声和错误信号的引导。
+
+\textbf{多类变化检测}:
+如表\ref{tab:Ada-mutil}所示，我们的AdaSemiCD同样在几乎所有多类数据集和所有划分设置上都实现了最佳性能，只是提升程度低于在简单的建筑物变化检测数据集上所取得的，这是由于多类别变化检测任务本身的复杂性，最明显的一点是，在某些情况下，之前的一些半监督的变化检测方法完全失效了，比监督基线的检测性能更差。然而，我们的半监督变化检测方法仍然可以利用额外的未标记样本来提高性能。
+
+另一点值得注意的是，在这些多类变化检测数据集中，所有方法的整体精度都降低了，$OA$和$Iou_c$不再直接对应。其中一个现象是$Iou_c$达到了最高，而OA没有，这是由于其侧重点不同。OA更注重全局精度，在背景类占主导的数据集下就是优先背景类的检测，而$Iou_c$更关注目标类别的检测，在变化检测中我们更加关注于目标对象的检测，因此$Iou_c$更加重要。从DSIFN-CD数据集的实验结果中可以看到，我们的方法在一些设置下尽管在$OA$上表现不佳，但是在$IoU_c$上取得了最好的结果。而在其余数据集上我们的AdaSemiCD方法总体上都达到了最佳的效果。
+\subsection{定性对比}
+\begin{figure}[!htbp]
+  \centering
+  \includegraphics[scale=0.45]{images/Adalevir-vis.png}
+  \caption{
+    AdaSemiCD与SOTA方法在LEVIR-CD测试集上的变化检测结果可视化对比。
+  }
+  \label{fig:AdaLevir-vis}
+\end{figure}
+\begin{figure}[!htbp]
+  \centering
+  \includegraphics[scale=0.45]{images/Adawhu-vis.png}
+  \caption{
+    AdaSemiCD与SOTA方法在WHU-CD测试集上的变化检测结果可视化对比。
+  }
+  \label{fig:AdaWhu-vis}
+\end{figure}
+为了更清楚地说明我们提出的方法的变化检测性能提升，我们在所有十个不同的数据集的测试集上都进行了可视化，我们展示了部分可视化样例，其中图\ref{fig:AdaWhu-vis}展示了在WHU-CD测试集的部分可视化示例，图\ref{fig:AdaLevir-vis}展示了在WHU-CD测试集的可视化示例，图\ref{fig:AdaCdd-vis}展示了在CDD测试集的可视化示例。很明显，在这些可视化结果中，我们的方法显著减轻了遗漏检测和错误检测这两种常见问题。
+\begin{figure}[!htbp]
+  \centering
+  \includegraphics[scale=0.45]{images/Adacdd-vis.png}
+  \caption{
+    AdaSemiCD与SOTA方法在CDD测试集上的变化检测结果可视化对比。
+  }
+  \label{fig:AdaCdd-vis}
+  \end{figure}
+在具有挑战性的场景下，我们的方法仍然可以有效地识别我们感兴趣的变化区域。例如图\ref{fig:AdaWhu-vis}下半部分的图像对，图像之间存在明显的干扰，由于缺乏足够的标记信息，使得减轻这种干扰具有挑战性，从而导致模型性能下降，许多半监督变化检测方法检测到了建筑物之外的干扰变化。此外，当检测小而密集变化的区域时，任务进一步复杂化，这对模型来说是非常困难的。
+\begin{figure}[!htbp]
+  \centering
+  \includegraphics[scale=0.45]{images/AdaCl-vis.png}
+  \caption{
+    AdaSemiCD与SOTA方法在CL-CD测试集上的变化检测结果可视化对比。
+  }
+  \label{fig:AdaCl-vis}
+  \end{figure}
+
+在这些复杂的场景中，半监督模型由于错误噪声引导的问题可能导致生成错误的伪标签，当无标记的训练样本占大多数时，这种错误就成为了主流。因此，可以从可视图看出，在这种情况下，半监督变化检测的性能甚至可能比仅在标记数据上监督训练的极限方法表现还要差。另一方面，我们的模型在训练阶段自适应地排除了这些噪声，并在训练过程中自适应地集成更优模型的参数。在这些复杂的情况下，伪标签的质量更高，达到了基本可靠的水平，为模型训练提供了准确的指导信号。很明显我们的模型在这些复杂区域，如图\ref{fig:AdaLevir-vis}、\ref{fig:AdaWhu-vis}、\ref{fig:AdaCdd-vis}以及\ref{fig:AdaCl-vis}中用方框突出显示的区域表现更加出色，这也正是我们所提出的方法要解决的问题。
 \subsection{消融实验}
+在本小节中，我们进行了消融研究，主要是为了验证每个模块在我们提出的方法中的作用，并探索我们在实验中的一些超参数选择。
+
+\subsubsection{自适应机制有效性}
+由于对比的半监督方法与本文模型结构的差异，我们一开始并没有急于验证我们所提出的自适应机制的优越性。相反，我们首先使用经典的平均教师框架作为基线进行了实验，除了为其设置的固定超参数来控制无监督损失的权重外，其余的数据增强和变化检测网络与所有方法保持相同。与单模型和共享权值的双分支网络相比，平均教师框架的优势非常明显。这也证明了扰动一致性和移动指数平均的有效性，在此基础上我们探讨了所提出的自适应机制的效力，此实验在LEVIR-CD数据集上进行。
+\begin{table*}[ht]
+  % \renewcommand\arraystretch{1.2}
+\centering
+% \tiny
+\caption{AdaSemiCD在LEVIR-CD数据集上的消融研究。}
+   \resizebox{0.9\textwidth}{!}{
+   % \setlength{\tabcolsep}{9pt}
+\begin{tabular}{p{30mm}p{20mm}p{20mm}cp{20mm}p{20mm}cp{20mm}p{20mm}cp{20mm}p{20mm}} %
+  \toprule
+  \multirow{2}{*}{\parbox[c]{.2\linewidth}{Method}} & \multicolumn{2}{c}{5\%} & & \multicolumn{2}{c}{10\%} & & \multicolumn{2}{c}{20\%} & & \multicolumn{2}{c}{40\%}\\
+  \cmidrule{2-3} \cmidrule{5-6} \cmidrule{8-9} \cmidrule{11-12}
+  & {$IoU^c$} & {OA} && {$IoU^c$} & {OA} & & {$IoU^c$} & {OA} &&{$IoU^c$} & {OA}\\
+  \midrule
+  Sup. only   &   61.0 & 97.60 && %5
+                  66.8 & 98.13 && %10
+                  72.3 & 98.44 && %20
+                  74.9 & 98.60 \\ %40
+    MT-EMA      &   67.1 {\color{red} (+6.1)} & 98.14 {\color{red}(+0.54)} &&
+                  75.0 {\color{red} (+8.2)} & 98.63 {\color{red} (+0.50)} &&
+                  76.6 {\color{red} (+4.3)} & 98.71 {\color{red} (+0.27)}&&
+                  77.0 {\color{red} (+2.1)} & 98.73 {\color{red} (+0.13)} \\
+      MT-AEMA     &   68.9 {\color{red} (+7.9)}& 98.23 {\color{red} (+0.63)} &&
+                  76.1 {\color{red} (+9.3)} & 98.66 {\color{red} (+0.53)} &&
+                      77.7 {\color{red} (+5.4)} & 98.78 {\color{red} (+0.34)} &&
+                  77.8 {\color{red} (+2.9)} & 98.78 {\color{red} (+0.18)} \\
+      (MT-EMA)+AF* &  72.0 {\color{red} (+11.0)} & 98.43 {\color{red} (+0.83)} && %5
+                  76.8 {\color{red} (+10.0)} & 98.72 {\color{red} (+0.59)} && %10
+                77.5 {\color{red} (+5.2)} & 98.74 {\color{red} (+0.30)} && %20
+                  78.5 {\color{red} (+3.6)} & 98.80 {\color{red} (+0.20)} \\ %40
+  (MT-EMA)+AF &   77.0 {\color{red} (+16.0)} & 98.72 {\color{red} (+1.12)} && %5
+                  78.8 {\color{red} (+12.0)} & 98.83 {\color{red} (+0.70)} && %10
+                80.4 {\color{red} (+8.1)} & 98.91 {\color{red} (+0.47)} && %20
+                  80.0 {\color{red} (+5.1)} & 98.90 {\color{red} (+0.30)} \\ %40
+      AdaSemiCD   &   77.7 {\color{red} (+16.7)} & 98.78 {\color{red} (+1.18)} &&
+                  79.4 {\color{red} (+12.6)} & 98.87 {\color{red} (+0.74)} &&
+                  80.3 {\color{red} (+8.0)} & 98.92 {\color{red} (+0.48)} &&
+                  80.6 {\color{red} (+5.7)} & 98.93 {\color{red} (+0.33)} \\
+  \bottomrule
+\end{tabular}
+  }
+% \normalsize
+\label{tab:AdaModule_ablation}
+\end{table*}
+
+我们将所提出的AdaEMA模块和AdaFusion模块分别添加到平均教师框架中，在$Iou_c$上分别取得了1.2和5.1个百分点的平均改进，如表\ref{tab:AdaModule_ablation}所示。表中的*表示，在AdaFusion中，采用自适应机制判断是否进行融合，而在选择融合区域时采用随机选择策略。这与AdaFusion自适应融合之间在性能上存在明显的差距。最后，完整的方法在任意单个模块的性能上去的了进一步的提升，这表明我们提出的两个模块是解耦的，模型体系结构是合理的。
+
+\subsubsection{超参数选择}
+无监督损失权重的预热过程对AdaSemiCD在半监督变化检测上的性能有重大影响。因此，我们对控制预热过程的两个超参数（$\gamma$ 和 $w_{max}$） 的选择进行了消融实验。如表\ref{tab:AdaPram_ablation}所示，在参数（0.1，10）、（0.1，0.1）和（0.1，1.0）的组合下，我们的方法在LEVIR-CD、WHU-CD、CDD三个数据集上的性能最佳。而且，我们的方法对该超参数敏感，参数选择不当会造成较大的性能差异。这是因为我们的方法同时对标记样本进行监督训练和对未标记样本进行无监督训练。如果不能很好地平衡两者之间的关系，就会导致标记样本的过拟合或未标记样本的过多噪声干扰。我们剩下的所有实验都是在这个超参数设置下进行的，比较方法的超参数与原论文中的最佳设置一致。但总的来说，通过经验积累发现，$\gamma$我们总是设置为0.1，$w_{max}$可以在{0.1，1.0，10.0，30.0}中进行尝试，由于深度学习的黑盒性，单阶段半监督学习中监督和无监督的互相影响因素较多，我们暂时无法得出一组在所有情况下都适用的最优参数。在其余数据集上我们仅进行了轻微的超参调整就取得了可观的实验结果，我们将$w_{max}$分别设置为：LEVIR-CD+：10.0；GZ-CD：5.0；EGY-CD：5.0；HRCUS-CD：1.0；DSIFN-CD：10.0；SYSU-CD：1.0；CL-CD：1.0。
+
+\begin{table*}[tb]
+    % \renewcommand\arraystretch{1.2}
+	\centering
+	% \tiny
+	\caption{超参数敏感性消融实验结果。}
+     \resizebox{0.9\textwidth}{!}{
+     % \setlength{\tabcolsep}{9pt}
+	\begin{tabular}{p{10mm}p{20mm}p{10mm}cp{15mm}p{10mm}cp{15mm}p{10mm}cp{15mm}p{10mm}} %
+		\toprule
+		\multirow{2}{*}{\parbox[c]{.1\linewidth}{$\gamma$}} & \multirow{2}{*}{$w_{max}$} & \multicolumn{2}{c}{LEVIR-CD} & & \multicolumn{2}{c}{WHU-CD} & & \multicolumn{2}{c}{CDD}\\
+	  \cmidrule{3-4} \cmidrule{6-7} \cmidrule{9-10}
+		&& {$IoU^c$} & {OA} && {$IoU^c$} & {OA} & & {$IoU^c$} & {OA} \\
+		\midrule
+  	0  & 0 (Sup.Only) &   66.8 & 98.13 && %LEVIR-CD
+		                55.7 & 97.53 && %WHU-CD
+		                67.9 & 95.46 \\  %CDD
+		0.05  & 1.0 &   67.2 & 98.17 && %5
+		                53.8 & 97.02 && %WHU-CD
+		                74.4 & 96.35 \\  %CDD
+	    0.1   & 1.0   &   71.8 & 98.32 && %LEVIR-CD
+		                61.0 & 98.10 && %WHU-CD
+		                \underline{\textbf{77.3}} & \underline{\textbf{96.89}} \\  %CDD
+        0.3   & 1.0   &   69.9 & 98.26 && %LEVIR-CD
+		                59.4 & 98.03 && %WHU-CD
+		                76.2 & 96.56 \\  %CDD
+        0.5   & 1.0   &  68.7 & 98.15 && %LEVIR-CD
+		              60.9 & 98.25 && %WHU-CD
+		                76.3 & 96.58 \\  %CDD
+		1.0   & 1.0   &   67.3 & 98.13 && %LEVIR-CD
+		                60.5 & 98.18 && %10
+		                72.3 & 95.98 \\ %40
+        0.1   & 0.1   &   65.2 & 97.60 && %LEVIR-CD
+		                \underline{\textbf{70.8}} & \underline{\textbf{98.70}} && %WHU-CD
+		                71.6 & 95.77 \\  %CDD
+        0.1   & 0.5   &   68.3 & 98.14 && %LEVIR-CD
+		                66.9 & 98.54 && %WHU-CD
+		                75.8 & 96.67 \\  %CDD
+        0.1   & 5.0   &   73.9 & 98.75 && %LEVIR-CD
+		                60.1 & 98.00 && %WHU-CD
+		                69.1 & 95.51 \\  %CDD
+        0.1   & 10.0   & \underline{\textbf{79.4}} & \underline{\textbf{98.87}} && %LEVIR-CD
+		                52.4 & 97.40 && %WHU-CD
+		                68.2 & 95.50 \\  %CDD
+        0.1   & 30.0   &   71.9 & 98.42 && %LEVIR-CD
+		                50.34 & 97.12 && %WHU-CD
+		                65.4 & 95.20 \\  %CDD0
+		\bottomrule
+	\end{tabular}
+    }
+	% \normalsize
+	\label{tab:AdaPram_ablation}
+\end{table*}
+\subsubsection{计算资源}
+虽然引入了额外的自适应机制有效地提高了检测性能，但是一个不可避免的问题就是增加了额外的计算资源消耗，如果耗费了大量的资源而仅仅带来了有限的提升，则得不偿失，因此我们进行了计算资源耗费的实验验证。
+
+实验结果如表\ref{tab:Ada_compute}所示，由于我们对所有实验方法都公平地采用了相同的变化检测网络，因此训练参数数量（46.85M）和计算量（585.85 GFLOPs）都保持相同，我们的AdaSemiCD推理时间方面与其他方法相当。训练时间较长的主要原因是每次训练迭代过程中需要生成和评估两次伪标签，经过统计这一步大约需要0.3s左右，而融合和EMA参数更新分别只需要0.006s和0.03s左右。我们的模型仅仅是前期训练时间增加了25$\%$，但是取得了显著的性能优势，很好地平衡了性能和计算耗费，这对其实际应用具有重要的意义。
+\begin{table}[ht]
+  \centering
+  % \renewcommand\arraystretch{1.2}
+  \tiny
+  % \caption{Comparison of parameters, computing complexity, training time and inference time of different SSCD methods.}
+  \caption{LEVIR-CD数据集上不同方法的参数、计算复杂度和训练时间的比较。}
+  % 表格标题
+  \label{tab:Ada_compute} % 表格标签，用于引用
+   \resizebox{0.9\textwidth}{!}{
+  \begin{tabular}{p{20mm}p{15mm}p{15mm}p{25mm}p{30mm}p{10mm}} %
+  \toprule % 上边框线
+  Method & Params(M) & FLOPs(G) & Training Time(s) &Inference Time(ms) &$IoU^c$\\
+  \midrule % 中间分割线
+  Sup.Only & \hspace{0.3cm}46.85 & \hspace{0.20cm}585.85 & \hspace{1.0cm}77 & \hspace{1.3cm}56 & 61.0\\
+  AdvEnt\cite{vu2019advent} & \hspace{0.3cm}46.85 & \hspace{0.20cm}585.85 & \hspace{1.0cm}405 & \hspace{1.3cm}63 & 66.1\\
+  s4GAN\cite{mittal2019semi} & \hspace{0.3cm}46.85 & \hspace{0.20cm}585.85 & \hspace{1.0cm}585 & \hspace{1.3cm}58 & 64.0\\
+  SemiCDNet\cite{peng2021SemiCDNet} & \hspace{0.3cm}46.85 & \hspace{0.20cm}585.85 & \hspace{1.0cm}408 & \hspace{1.3cm}75 & 67.6\\
+  RCR\cite{bandara2022RCR} & \hspace{0.3cm}46.85 & \hspace{0.20cm}585.85 & \hspace{1.0cm}742 & \hspace{1.3cm}59 & 72.5\\
+  FPA\cite{Zhang2023FPA} & \hspace{0.3cm}46.85 & \hspace{0.20cm}585.85 & \hspace{1.0cm}727 & \hspace{1.3cm}68 & 73.7\\
+  AdaSemiCD & \hspace{0.3cm}46.85 & \hspace{0.20cm}585.85 & \hspace{1.0cm}915 & \hspace{1.3cm}67 &   \textbf{77.7}\\
+  \hline
+  Oracle & \hspace{0.3cm}46.85 &
+  \hspace{0.20cm}585.85 & \hspace{1.0cm}293 & \hspace{1.3cm}55 & 77.9 \\
+  \bottomrule % 下边框线
+\end{tabular}
+}
+\end{table}
 \section{本章小结}
+本章提出了基于伪标签评估的自适应半监督变化检测算法，首先介绍了基于平均教师模型的整体半监督变化检测框架，包括监督训练、基于一致性正则化的无监督训练两个部分，介绍了总体的损失函数。具体来说，我们对教师模型对未标记训练样本生成的伪标签质量进行评估，并根据评估结果对样本进行自适应的融合，提出了AdaFusion模块，以及对模型参数更新进行自适应的选择，提出了AdaEMA模块，最终提出了AdaSemiCD自适应半监督框架。随后我们介绍了统一的实验设置，与其他几种方法进行了对比实验，从定量和定性两个维度证明了AdaSemiCD的先进性，并设计消融实验验证了各个自适应模块的有效性以及我们的方法中超参数的最优选择。最后从性能和计算开销方面进行了实验探究，我们的方法仅增加了微弱的训练时间开销，而取得了性能上的巨大提升，证明我们的方法是具有实际应用意义的。
+
 
 \chapter{基于APE的单模型半监督变化检测算法}
 \section{引言}
